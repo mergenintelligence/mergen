@@ -19,6 +19,7 @@ interface LayoutProps {
 const ALERTS_SECTION_ID = 'alerts';
 const DIVERGENCES_SECTION_ID = 'divergences';
 const SETTINGS_SECTION_ID = 'settings';
+const COOLDOWN_SECTION_ID = 'cooldown';
 
 const getCategoryIcon = (name: string) => {
   const lowerName = name.toLowerCase();
@@ -236,8 +237,10 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
                     ? 'Mergen Intelligence Dashboard' 
                     : selectedCategoryId === 'news'
                       ? 'Haberler'
-                      : selectedCategoryId === ALERTS_SECTION_ID
+                    : selectedCategoryId === ALERTS_SECTION_ID
                         ? 'Uyarılar'
+                        : selectedCategoryId === COOLDOWN_SECTION_ID
+                          ? 'Cooldown'
                         : selectedCategoryId === SETTINGS_SECTION_ID
                           ? 'Ayarlar'
                       : categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId || ''] || 'Kategori'}

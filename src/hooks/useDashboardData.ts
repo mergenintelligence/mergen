@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { FED_POWER_CATEGORY_ID, fedGovernorProfiles, type FedGovernorProfile } from '../data/fedProfiles';
 
+const UTILITY_PAGE_IDS = new Set(['news', 'alerts', 'divergences', 'settings', 'cooldown']);
+
 export interface DashboardData {
   totalScore: number | null;
   totalScoreChange7d: number | null;
@@ -503,7 +505,7 @@ export function useDashboardData(selectedCategoryId: string) {
 
           divergences = buildDivergences(divergenceMap);
         }
-      } else {
+      } else if (!UTILITY_PAGE_IDS.has(selectedCategoryId)) {
         const { data: fetchedMetrics } = await supabase.from('metrics').select('*').eq('category_id', selectedCategoryId);
         metrics = fetchedMetrics;
         

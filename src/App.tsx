@@ -20,6 +20,7 @@ const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
 const ALERTS_SECTION_ID = 'alerts';
 const DIVERGENCES_SECTION_ID = 'divergences';
 const SETTINGS_SECTION_ID = 'settings';
+const COOLDOWN_SECTION_ID = 'cooldown';
 const APP_SETTINGS_KEY = 'mergen-ui-settings';
 
 const PLACEHOLDERS: Record<string, string> = {
@@ -36,6 +37,7 @@ const PLACEHOLDERS: Record<string, string> = {
   '30000000-0000-0000-0000-000000000011': 'Kripto Para Piyasaları',
 };
 const NEWS_SECTION_ID = 'news';
+const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID] as const;
 
 type AppSettings = {
   theme: 'dark' | 'graphite' | 'light';
@@ -507,7 +509,11 @@ async function runWithConcurrency<T>(
 export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState('home');
+  const [selectedCategoryId, setSelectedCategoryId] = useState(() => {
+    if (typeof window === 'undefined') return 'home';
+    const hash = window.location.hash.replace(/^#/, '').trim();
+    return hash || 'home';
+  });
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [alertSeverityFilter, setAlertSeverityFilter] = useState<'all' | 'red' | 'yellow'>('all');
@@ -527,6 +533,8 @@ export default function App() {
           ? 'Sapmalar'
           : selectedCategoryId === SETTINGS_SECTION_ID
             ? 'Ayarlar'
+            : selectedCategoryId === COOLDOWN_SECTION_ID
+              ? 'Cooldown'
       : selectedCategory?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori Endeksi';
   const topPanelScore = selectedCategoryId === 'home'
     ? data?.totalScore ?? null
@@ -534,6 +542,7 @@ export default function App() {
       || selectedCategoryId === ALERTS_SECTION_ID
       || selectedCategoryId === DIVERGENCES_SECTION_ID
       || selectedCategoryId === SETTINGS_SECTION_ID
+      || selectedCategoryId === COOLDOWN_SECTION_ID
       ? null
       : selectedCategory?.score ?? null;
   const topPanelTrend = selectedCategoryId === 'home'
@@ -542,6 +551,7 @@ export default function App() {
       || selectedCategoryId === ALERTS_SECTION_ID
       || selectedCategoryId === DIVERGENCES_SECTION_ID
       || selectedCategoryId === SETTINGS_SECTION_ID
+      || selectedCategoryId === COOLDOWN_SECTION_ID
       ? 'flat'
       : selectedCategory?.trend ?? 'flat';
   const topPanelChange7d = selectedCategoryId === 'home'
@@ -550,6 +560,7 @@ export default function App() {
       || selectedCategoryId === ALERTS_SECTION_ID
       || selectedCategoryId === DIVERGENCES_SECTION_ID
       || selectedCategoryId === SETTINGS_SECTION_ID
+      || selectedCategoryId === COOLDOWN_SECTION_ID
       ? null
       : selectedCategory?.change7d ?? null;
   const topInfoTitle = selectedCategoryId === 'home'
@@ -562,6 +573,8 @@ export default function App() {
           ? 'Sapma Notu'
           : selectedCategoryId === SETTINGS_SECTION_ID
             ? 'Panel Ayarları'
+            : selectedCategoryId === COOLDOWN_SECTION_ID
+              ? 'Operasyon Merkezi'
       : 'Skor Okumasi';
   const topInfoText = selectedCategoryId === 'home'
     ? (data?.alerts.length ?? 0) > 0
@@ -575,6 +588,8 @@ export default function App() {
           ? 'Burada ana skor ile alt metriklerin ters düştüğü dikkat çekici ayrışmalar izlenir.'
           : selectedCategoryId === SETTINGS_SECTION_ID
             ? 'Ayarlar bölümü görünüm, hareket ve rehber deneyimini kişiselleştirmek için ilk yapı taşlarını içerir.'
+            : selectedCategoryId === COOLDOWN_SECTION_ID
+              ? 'Bu gizli ekran, sistem çalıştırma ve AI yorum yenileme işlemlerini tek yerden manuel tetiklemek için hazırlandı.'
       : getScoreNarrative(topPanelScore, topPanelLabel);
   const scoredCategories = (data?.categories ?? []).filter(
     (category) => category.score !== null && category.score !== undefined,
@@ -600,7 +615,7 @@ export default function App() {
     .filter((value): value is string => Boolean(value))
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
   const selectedAiReliability = getAiReliability(data?.aiConfidence ?? null, selectedCoverageRatio);
-  const isUtilityPage = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID].includes(selectedCategoryId);
+  const isUtilityPage = UTILITY_SECTION_IDS.includes(selectedCategoryId as typeof UTILITY_SECTION_IDS[number]);
   const isCategoryPage = !isUtilityPage && selectedCategoryId !== 'home';
   const isCategoryTransitioning = loading && isCategoryPage;
   const alertsWithCategory = (data?.alerts ?? []).map((alert) => ({
@@ -646,6 +661,39 @@ export default function App() {
   }, [selectedCategoryId, settings.guideDefaultOpen]);
 
   useEffect(() => {
+    const syncFromHash = () => {
+      const hash = window.location.hash.replace(/^#/, '').trim();
+      if (!hash) {
+        setSelectedCategoryId('home');
+        return;
+      }
+
+      const knownIds = new Set([
+        'home',
+        COOLDOWN_SECTION_ID,
+        ...UTILITY_SECTION_IDS,
+        ...Object.keys(PLACEHOLDERS),
+        ...(data?.categories ?? []).map((category) => category.id),
+      ]);
+
+      if (knownIds.has(hash)) {
+        setSelectedCategoryId(hash);
+      }
+    };
+
+    syncFromHash();
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, [data?.categories]);
+
+  useEffect(() => {
+    const nextHash = selectedCategoryId === 'home' ? '' : `#${selectedCategoryId}`;
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+    }
+  }, [selectedCategoryId]);
+
+  useEffect(() => {
     const selectedName = selectedCategoryId === 'home'
       ? 'Mergen Intelligence - Dashboard'
       : selectedCategoryId === NEWS_SECTION_ID
@@ -656,15 +704,18 @@ export default function App() {
             ? 'Sapmalar'
             : selectedCategoryId === SETTINGS_SECTION_ID
               ? 'Ayarlar'
+              : selectedCategoryId === COOLDOWN_SECTION_ID
+                ? 'Cooldown'
               : selectedCategory?.name || PLACEHOLDERS[selectedCategoryId] || 'Mergen Intelligence';
 
     document.title = selectedName;
   }, [selectedCategoryId, selectedCategory]);
 
-  const handleSync = async () => {
+  const handleSync = async (targetCategoryId = selectedCategoryId) => {
     setIsSyncing(true);
     try {
-      if (isUtilityPage) {
+      const targetIsUtility = UTILITY_SECTION_IDS.includes(targetCategoryId as typeof UTILITY_SECTION_IDS[number]);
+      if (targetIsUtility) {
         throw new Error('Bu ekran için sistem çalıştırma gerekmez.');
       }
 
@@ -672,22 +723,22 @@ export default function App() {
         .from('metrics')
         .select('*');
 
-      const { data: metrics, error } = selectedCategoryId === 'home'
+      const { data: metrics, error } = targetCategoryId === 'home'
         ? await metricsQuery
-        : await metricsQuery.eq('category_id', selectedCategoryId);
+        : await metricsQuery.eq('category_id', targetCategoryId);
 
       if (error || !metrics || metrics.length === 0) {
         throw new Error(
-          selectedCategoryId === 'home'
+          targetCategoryId === 'home'
             ? 'No metrics found in database. Please run schema.sql in Supabase.'
             : 'Bu kategori icin metric bulunamadi.',
         );
       }
 
       console.log(
-        selectedCategoryId === 'home'
+        targetCategoryId === 'home'
           ? `Found ${metrics.length} metrics to fetch.`
-          : `Found ${metrics.length} metrics to fetch for category ${selectedCategoryId}.`,
+          : `Found ${metrics.length} metrics to fetch for category ${targetCategoryId}.`,
       );
 
       await runWithConcurrency(metrics, SYNC_CONCURRENCY, async (metric) => {
@@ -701,7 +752,7 @@ export default function App() {
       });
 
       console.log('Running Scoring Engine...');
-      await runScoringEngine(selectedCategoryId === 'home' ? undefined : selectedCategoryId);
+      await runScoringEngine(targetCategoryId === 'home' ? undefined : targetCategoryId);
 
       console.log('Running Alert Engine...');
       await runAlertEngine();
@@ -710,7 +761,7 @@ export default function App() {
       await refetch();
 
       alert(
-        selectedCategoryId === 'home'
+        targetCategoryId === 'home'
           ? 'Tum sistem icin senkronizasyon, skorlama ve alert hesaplamasi tamamlandi.'
           : 'Bu kategori icin senkronizasyon, skorlama ve alert hesaplamasi tamamlandi.',
       );
@@ -722,22 +773,23 @@ export default function App() {
     }
   };
 
-  const handleGenerateAi = async () => {
+  const handleGenerateAi = async (targetCategoryId = selectedCategoryId) => {
     setIsGeneratingAi(true);
     try {
-      if (isUtilityPage) {
+      const targetIsUtility = UTILITY_SECTION_IDS.includes(targetCategoryId as typeof UTILITY_SECTION_IDS[number]);
+      if (targetIsUtility) {
         throw new Error('Bu ekran için AI yorum üretimi tanımlı değil.');
       }
 
-      if (selectedCategoryId === 'home') {
+      if (targetCategoryId === 'home') {
         await generateMarketOverview();
       } else {
-        await generateCategoryInsight(selectedCategoryId);
+        await generateCategoryInsight(targetCategoryId);
       }
 
       await refetch();
       alert(
-        selectedCategoryId === 'home'
+        targetCategoryId === 'home'
           ? 'Genel piyasa AI yorumu guncellendi.'
           : 'Bu kategori icin AI yorumu guncellendi.',
       );
@@ -770,7 +822,7 @@ export default function App() {
       <div className="space-y-6">
         {/* Top Row: General Score + Categories */}
         <div className="flex items-start gap-8">
-          {![NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID].includes(selectedCategoryId) && (
+          {!UTILITY_SECTION_IDS.includes(selectedCategoryId as typeof UTILITY_SECTION_IDS[number]) && (
             <div className="shrink-0">
             <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-1">{topPanelLabel}</div>
               <div className="flex items-baseline gap-2">
@@ -806,40 +858,10 @@ export default function App() {
           )}
 
           <div className="flex-1">
-              <div className="flex items-center justify-between border-b border-[#1F1F1F] pb-1 mb-2">
-                <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">
-                  {topInfoTitle}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={handleGenerateAi}
-                    disabled={isGeneratingAi || isSyncing || isUtilityPage}
-                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-[#1F1F1F] text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#111111] transition-colors disabled:opacity-50"
-                  >
-                    <Activity className={`w-3 h-3 ${isGeneratingAi ? 'animate-pulse' : ''}`} />
-                    {isGeneratingAi
-                      ? 'AI...'
-                      : selectedCategoryId === 'home'
-                        ? 'Genel AI Prompt'
-                        : isUtilityPage
-                          ? 'AI Kapalı'
-                          : 'AI Prompt'}
-                  </button>
-                  <button 
-                    onClick={handleSync} 
-                    disabled={isSyncing || isGeneratingAi || isUtilityPage}
-                    className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2 py-1 border border-[#1F1F1F] text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#111111] transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing
-                      ? 'İşleniyor...'
-                      : selectedCategoryId === 'home'
-                        ? 'Sistemi Çalıştır (Test)'
-                        : isUtilityPage
-                          ? 'Çalıştırma Yok'
-                          : 'Kategoriyi Çalıştır'}
-                  </button>
-                </div>
+            <div className="flex items-center justify-between border-b border-[#1F1F1F] pb-1 mb-2">
+              <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">
+                {topInfoTitle}
+              </div>
             </div>
             <div className="text-sm text-[#A3A3A3] leading-relaxed max-w-3xl">
               {topInfoText}
@@ -1282,6 +1304,52 @@ export default function App() {
                 Şu an belirgin bir sapma sinyali tespit edilmedi.
               </div>
             )}
+          </div>
+        ) : selectedCategoryId === COOLDOWN_SECTION_ID ? (
+          <div className="space-y-6">
+            <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
+              <div className="text-sm font-medium text-[#E5E5E5] mb-2">Gizli Operasyon Ekranı</div>
+              <div className="text-sm text-[#A3A3A3] leading-relaxed">
+                Bu alan, demo sırasında manuel veri yenileme ve AI yorum tetikleme işlemlerini tek yerden yapmak için ayrıldı.
+                Normal kullanıcı menüsünde görünmez; doğrudan <span className="font-mono text-[#D4D4D4]">#cooldown</span> ile açılır.
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {[
+                { id: 'home', name: 'HOME' },
+                ...(data?.categories ?? []).map((category) => ({ id: category.id, name: category.name })),
+              ].map((entry) => (
+                <div key={entry.id} className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wider text-[#666666] mb-1">
+                        {entry.id === 'home' ? 'Genel Sistem' : 'Kategori'}
+                      </div>
+                      <div className="text-sm text-[#E5E5E5]">{entry.name}</div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => handleGenerateAi(entry.id)}
+                        disabled={isGeneratingAi || isSyncing}
+                        className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-3 py-2 border border-[#1F1F1F] text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#141414] transition-colors disabled:opacity-50"
+                      >
+                        <Activity className={`w-3 h-3 ${isGeneratingAi ? 'animate-pulse' : ''}`} />
+                        {isGeneratingAi ? 'AI...' : 'AI Prompt'}
+                      </button>
+                      <button
+                        onClick={() => handleSync(entry.id)}
+                        disabled={isSyncing || isGeneratingAi}
+                        className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-3 py-2 border border-[#1F1F1F] text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#141414] transition-colors disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'İşleniyor...' : (entry.id === 'home' ? 'Sistemi Çalıştır' : 'Kategoriyi Çalıştır')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : selectedCategoryId === SETTINGS_SECTION_ID ? (
           <div className="space-y-6">

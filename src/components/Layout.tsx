@@ -16,6 +16,10 @@ interface LayoutProps {
   onSelectCategory?: (id: string) => void;
 }
 
+const ALERTS_SECTION_ID = 'alerts';
+const DIVERGENCES_SECTION_ID = 'divergences';
+const SETTINGS_SECTION_ID = 'settings';
+
 const getCategoryIcon = (name: string) => {
   const lowerName = name.toLowerCase();
   if (lowerName.includes('kredi') || lowerName.includes('stres')) return <Activity />;
@@ -125,10 +129,14 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
     <div className="flex h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans overflow-hidden">
       {/* Sidebar */}
       <aside className="w-[280px] shrink-0 border-r border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
-        <div className="p-4 border-b border-[#1F1F1F] flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSelectCategory && onSelectCategory('home')}
+          className="p-4 border-b border-[#1F1F1F] flex items-center gap-2 text-left hover:bg-[#111111] transition-colors"
+        >
           <Hexagon className="w-4 h-4 text-[#A3A3A3]" />
-          <span className="font-semibold tracking-wide text-sm uppercase">Mergen</span>
-        </div>
+          <span className="font-semibold tracking-wide text-sm uppercase">Mergen Intelligence</span>
+        </button>
         
         <div className="flex-1 overflow-y-auto py-4">
           <div className="px-4 mb-2 flex items-center justify-between gap-3 text-[11px] font-semibold text-[#666666] uppercase tracking-wider">
@@ -178,9 +186,9 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
               />
             ))}
             {otherPlaceholders.map(([id, label]) => (
-              <NavItem
-                key={id}
-                icon={getCategoryIcon(label)}
+            <NavItem
+              key={id}
+              icon={getCategoryIcon(label)}
                 label={label}
                 active={selectedCategoryId === id}
                 onClick={() => onSelectCategory && onSelectCategory(id)}
@@ -192,9 +200,26 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
             Sistem
           </div>
           <nav className="space-y-1">
-            <NavItem icon={<AlertTriangle />} label="Uyarılar" badge={String(alertCount)} />
-            <NavItem icon={<Activity />} label="Sapmalar" badge="0" />
-            <NavItem icon={<Settings />} label="Ayarlar" />
+            <NavItem
+              icon={<AlertTriangle />}
+              label="Uyarılar"
+              badge={String(alertCount)}
+              active={selectedCategoryId === ALERTS_SECTION_ID}
+              onClick={() => onSelectCategory && onSelectCategory(ALERTS_SECTION_ID)}
+            />
+            <NavItem
+              icon={<Activity />}
+              label="Sapmalar"
+              badge="0"
+              active={selectedCategoryId === DIVERGENCES_SECTION_ID}
+              onClick={() => onSelectCategory && onSelectCategory(DIVERGENCES_SECTION_ID)}
+            />
+            <NavItem
+              icon={<Settings />}
+              label="Ayarlar"
+              active={selectedCategoryId === SETTINGS_SECTION_ID}
+              onClick={() => onSelectCategory && onSelectCategory(SETTINGS_SECTION_ID)}
+            />
           </nav>
         </div>
       </aside>
@@ -211,6 +236,10 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
                     ? 'Mergen Intelligence Dashboard' 
                     : selectedCategoryId === 'news'
                       ? 'Haberler'
+                      : selectedCategoryId === ALERTS_SECTION_ID
+                        ? 'Uyarılar'
+                        : selectedCategoryId === SETTINGS_SECTION_ID
+                          ? 'Ayarlar'
                       : categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId || ''] || 'Kategori'}
                 </span>
               </div>

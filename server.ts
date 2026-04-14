@@ -9,10 +9,20 @@ const yahooFinance = new (YahooFinance as any)();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY });
 const SOCIAL_STABILITY_CATEGORY_ID = '30000000-0000-0000-0000-000000000001';
 const TECHNOLOGY_CATEGORY_ID = '30000000-0000-0000-0000-000000000002';
+const FED_POWER_CATEGORY_ID = '30000000-0000-0000-0000-000000000003';
 const ETF_FLOWS_CATEGORY_ID = '30000000-0000-0000-0000-000000000004';
 const PRECIOUS_METALS_CATEGORY_ID = '30000000-0000-0000-0000-000000000005';
 const AGRI_FOOD_CATEGORY_ID = '30000000-0000-0000-0000-000000000006';
+const ENERGY_SECURITY_CATEGORY_ID = '30000000-0000-0000-0000-000000000007';
+const CURRENCY_DYNAMICS_CATEGORY_ID = '30000000-0000-0000-0000-000000000008';
+const PUBLIC_FINANCE_CATEGORY_ID = '30000000-0000-0000-0000-000000000009';
+const EMERGING_MARKETS_CATEGORY_ID = '30000000-0000-0000-0000-000000000010';
 const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
+const CREDIT_STRESS_CATEGORY_ID = '10000000-0000-0000-0000-000000000001';
+const LIQUIDITY_CATEGORY_ID = '10000000-0000-0000-0000-000000000002';
+const REAL_ECONOMY_CATEGORY_ID = '10000000-0000-0000-0000-000000000003';
+const INFLATION_CATEGORY_ID = '10000000-0000-0000-0000-000000000004';
+const GLOBAL_RISK_CATEGORY_ID = '10000000-0000-0000-0000-000000000005';
 const NEWS_FEEDS = [
   'https://news.google.com/rss/search?q=markets%20OR%20stocks%20OR%20economy%20when%3A1d&hl=en-US&gl=US&ceid=US%3Aen',
   'https://news.google.com/rss/search?q=Fed%20OR%20inflation%20OR%20tariff%20OR%20recession%20OR%20oil%20when%3A1d&hl=en-US&gl=US&ceid=US%3Aen',
@@ -25,6 +35,195 @@ type NewsItem = {
   link: string;
   publishedAt: string | null;
 };
+
+type TimeSeriesObservation = {
+  date: string;
+  value: string;
+};
+
+const STABLECOIN_IDS = [
+  'tether',
+  'usd-coin',
+  'dai',
+  'ethena-usde',
+  'paypal-usd',
+  'first-digital-usd',
+  'true-usd',
+  'usdd',
+  'pax-dollar',
+];
+
+type CryptoSnapshot = {
+  date: string;
+  btcDominance: number;
+  totalMarketCap: number;
+  total2: number;
+  total3: number;
+  stablecoinDominance: number;
+  totalStablecoinMcap: number;
+  netStablecoinFlow: number;
+  usdtPrinting: number;
+  openInterest: number;
+  fundingRates: number;
+  liquidationHeatmap: number;
+  googleTrendsBtc: number;
+};
+
+let cryptoSnapshotCache: { fetchedAt: number; data: CryptoSnapshot } | null = null;
+
+function parseFredCsv(csv: string, observationStart?: string) {
+  const lines = csv.split(/\r?\n/).filter(Boolean);
+  if (lines.length <= 1) {
+    return [] as TimeSeriesObservation[];
+  }
+
+  const observations: TimeSeriesObservation[] = [];
+
+  for (const line of lines.slice(1)) {
+    const commaIndex = line.indexOf(',');
+    if (commaIndex === -1) {
+      continue;
+    }
+
+    const date = line.slice(0, commaIndex).trim();
+    const value = line.slice(commaIndex + 1).trim().replace(/^"|"$/g, '');
+
+    if (!date || !value || value === '.') {
+      continue;
+    }
+
+    if (observationStart && date < observationStart) {
+      continue;
+    }
+
+    observations.push({ date, value });
+  }
+
+  return observations.sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+async function fetchJson<T>(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} for ${url}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+async function fetchCryptoSnapshot(): Promise<CryptoSnapshot> {
+  const today = new Date().toISOString().split('T')[0];
+  if (cryptoSnapshotCache && Date.now() - cryptoSnapshotCache.fetchedAt < 60_000) {
+    return cryptoSnapshotCache.data;
+  }
+
+  const globalData = await fetchJson<any>('https://api.coingecko.com/api/v3/global');
+  const totalMarketCap = Number(globalData?.data?.total_market_cap?.usd ?? 0);
+  const btcDominance = Number(globalData?.data?.market_cap_percentage?.btc ?? 0);
+  const ethDominance = Number(globalData?.data?.market_cap_percentage?.eth ?? 0);
+  const btcMarketCap = totalMarketCap * (btcDominance / 100);
+  const ethMarketCap = totalMarketCap * (ethDominance / 100);
+
+  const stablecoinMarkets = await fetchJson<any[]>(
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(STABLECOIN_IDS.join(','))}&price_change_percentage=24h`,
+  );
+
+  const totalStablecoinMcap = stablecoinMarkets.reduce((sum, coin) => sum + Number(coin.market_cap || 0), 0);
+  const totalStablecoinFlow = stablecoinMarkets.reduce((sum, coin) => sum + Number(coin.market_cap_change_24h || 0), 0);
+  const usdtCoin = stablecoinMarkets.find((coin) => coin.id === 'tether');
+  let openInterest = 0;
+  let fundingRates = 0;
+
+  try {
+    const oi = await fetchJson<any>('https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT');
+    openInterest = Number(oi?.openInterest || 0);
+  } catch (error) {
+    console.warn('Open interest fetch failed:', error);
+  }
+
+  try {
+    const funding = await fetchJson<any[]>('https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1');
+    fundingRates = Number(funding?.[0]?.fundingRate || 0) * 100;
+  } catch (error) {
+    console.warn('Funding rate fetch failed:', error);
+  }
+
+  let googleTrendsBtc = 0;
+  try {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept-Language': 'en-US,en;q=0.9',
+      Referer: 'https://trends.google.com/',
+    };
+    const exploreReq = {
+      comparisonItem: [{ keyword: 'Bitcoin', geo: '', time: 'today 12-m' }],
+      category: 0,
+      property: '',
+    };
+    const exploreUrl = `https://trends.google.com/trends/api/explore?hl=en-US&tz=0&req=${encodeURIComponent(JSON.stringify(exploreReq))}`;
+    const exploreText = await (await fetch(exploreUrl, { headers })).text();
+    const exploreJson = JSON.parse(exploreText.replace(/^\)\]\}',?\n/, ''));
+    const widget = (exploreJson.widgets || []).find((item: any) => item.id === 'TIMESERIES');
+
+    if (widget) {
+      const widgetReq = typeof widget.request === 'string' ? widget.request : JSON.stringify(widget.request);
+      const timelineUrl = `https://trends.google.com/trends/api/widgetdata/multiline?hl=en-US&tz=0&req=${encodeURIComponent(widgetReq)}&token=${encodeURIComponent(widget.token)}`;
+      const timelineText = await (await fetch(timelineUrl, { headers })).text();
+      const timelineJson = JSON.parse(timelineText.replace(/^\)\]\}',?\n/, ''));
+      const timelineData = timelineJson?.default?.timelineData || [];
+      const lastPoint = timelineData[timelineData.length - 1];
+      googleTrendsBtc = Array.isArray(lastPoint?.value) ? Number(lastPoint.value[0]) : 0;
+    }
+  } catch (error) {
+    console.warn('Google Trends fetch failed:', error);
+  }
+
+  const snapshot: CryptoSnapshot = {
+    date: today,
+    btcDominance,
+    totalMarketCap,
+    total2: Math.max(totalMarketCap - btcMarketCap, 0),
+    total3: Math.max(totalMarketCap - btcMarketCap - ethMarketCap, 0),
+    stablecoinDominance: totalMarketCap > 0 ? (totalStablecoinMcap / totalMarketCap) * 100 : 0,
+    totalStablecoinMcap,
+    netStablecoinFlow: totalStablecoinFlow,
+    usdtPrinting: Number(usdtCoin?.market_cap_change_24h || 0),
+    openInterest,
+    fundingRates,
+    liquidationHeatmap: Math.abs(openInterest * fundingRates),
+    googleTrendsBtc,
+  };
+
+  cryptoSnapshotCache = {
+    fetchedAt: Date.now(),
+    data: snapshot,
+  };
+
+  return snapshot;
+}
+
+async function fetchCryptoSeries(seriesId: string): Promise<TimeSeriesObservation[]> {
+  const snapshot = await fetchCryptoSnapshot();
+  const seriesMap: Record<string, number> = {
+    'BTC.D': snapshot.btcDominance,
+    'USDT.D': snapshot.stablecoinDominance,
+    TOTAL: snapshot.totalMarketCap,
+    TOTAL2: snapshot.total2,
+    TOTAL3: snapshot.total3,
+    OPEN_INTEREST: snapshot.openInterest,
+    FUNDING_RATES: snapshot.fundingRates,
+    LIQUIDATION_HEATMAP: snapshot.liquidationHeatmap,
+    TOTAL_STABLECOIN_MCAP: snapshot.totalStablecoinMcap,
+    NET_STABLECOIN_FLOW: snapshot.netStablecoinFlow,
+    USDT_PRINTING: snapshot.usdtPrinting,
+    GOOGLE_TRENDS_BTC: snapshot.googleTrendsBtc,
+  };
+
+  if (!(seriesId in seriesMap)) {
+    throw new Error(`Unsupported crypto series: ${seriesId}`);
+  }
+
+  return [{ date: snapshot.date, value: String(seriesMap[seriesId]) }];
+}
 
 function getMetricCadence(source: string): 'daily' | 'annual' {
   if ([
@@ -255,6 +454,325 @@ Kurallar:
 `;
 }
 
+function buildCreditStressPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde kredi ve finansal stres rejimini yorumlayan bir analiz katmanisin.
+Bu kategori sistemin genel tansiyonunu, kredi spreadlerini, getiri egrisindeki bozulmayi ve fonlama kosullarini birlikte okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = yuksek stres, 100 = dengeli ve saglikli finansal zemin)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. STLFSI4, NFCI ve high-yield spread tarafini sistem tansiyonu olarak birlikte yorumla.
+4. Getiri egrisi ve banka kredisi tarafini resesyon/kredi daralmasi baglaminda oku.
+5. SOFR, IORB ve fonlama maliyetlerini likidite kalitesi olarak ayri degerlendir.
+6. Sadece gecerli JSON don. Markdown veya ek metin verme.
+7. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildLiquidityPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde piyasa likiditesini yorumlayan bir analiz katmanisin.
+Bu kategori Fed bilancosu, TGA, RRP, banka rezervleri ve net likidite ivmesi uzerinden piyasadaki gercek dolar akisinin rejimini okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = daralan/sikisan likidite, 100 = destekleyici likidite rejimi)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Net likidite, ivme, TGA ve RRP farkini acik secik ayir.
+4. WALCL yukseliyor diye tek basina olumlu yazma; TGA ve RRP drenajini hesaba kat.
+5. Banka rezervlerini finansal tampon olarak oku.
+6. Sadece gecerli JSON don. Markdown veya ek metin verme.
+7. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildRealEconomyPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde reel ekonomi ve buyume rejimini yorumlayan bir analiz katmanisin.
+Bu kategori isgucu piyasasi, sanayi dongusu, tuketim ve reel gelir uzerinden ekonominin gercek ivmesini okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = zayiflama/daralma, 100 = saglikli buyume)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Istihdam, haftalik basvurular, PMI ve kapasite kullanimini birbirine baglayarak yaz.
+4. Reel perakende satis ve reel geliri hanehalki talebinin cekirdegi olarak yorumla.
+5. Tek bir veriyle kesin resesyon veya boom dili kurma; genel rejimi anlat.
+6. Sadece gecerli JSON don. Markdown veya ek metin verme.
+7. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildInflationPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde enflasyon rejimini yorumlayan bir analiz katmanisin.
+Bu kategori sadece baslik enflasyonu degil; kalicilik, yayilim, ucret baskisi, beklentiler ve maliyet kanallarini birlikte okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = yuksek ve kalici enflasyon baskisi, 100 = daha sakin fiyat rejimi)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 5-6 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Baslik enflasyon, sticky/median CPI ve supercore farkini net ayir.
+4. Ucret metriklerini beklentilerden ayri ele al.
+5. GSCPI, ZORI, ithalat fiyatlari ve CRB tarafini maliyet kanali olarak yorumla.
+6. Sadece gecerli JSON don. Markdown veya ek metin verme.
+7. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildGlobalRiskPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde kuresel risk rejimini yorumlayan bir analiz katmanisin.
+Bu kategori jeopolitik stres, tedarik zinciri tikanikligi, kuyruk riski, ticaret navlunu ve yapisal kirilganliklari birlikte okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = yuksek kuresel risk, 100 = daha dengeli dis ortam)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Jeopolitik, navlun/tedarik ve spread risklerini ayri ama bagli anlat.
+4. Copper/Gold oranini buyume-korku dengesi olarak yorumla.
+5. Yapisal riskleri anlik kriz diliyle karistirma.
+6. Sadece gecerli JSON don. Markdown veya ek metin verme.
+7. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildFedPowerPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde Fed ici guc dengesini yorumlayan bir analiz katmanisin.
+Bu kategori Fed'in sadece faiz durusunu degil; kurulun kurumsal kokenini, siyasi baskiyi, soylem kaymasini ve ic fikir ayriliklarini okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = kirilgan ve catisan guc yapisi, 100 = daha tutarli ve dengeli ic zemin)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 5-6 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Governor kokeni, siyasi tilt, revolving door ve think-tank baglarini ayni sey gibi yazma.
+4. Hawk-dove ton, dissent ve congressional aggression tarafini "karar cevresindeki baski" olarak oku.
+5. Policy deviation ve shadow rate gap varsa bunu burokratik/politik sapma baglaminda yorumla.
+6. Sadece gecerli JSON don. Markdown veya ek metin verme.
+7. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildEnergyPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde enerji ve enerji guvenligi rejimini yorumlayan bir analiz katmanisin.
+Bu kategori petrol, dogal gaz, stratejik rezerv ve enerji enflasyonu uzerinden arz guvenligi ile fiyat baskisini birlikte okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = yuksek enerji stresi, 100 = dengeli enerji rejimi)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Brent/WTI, dogal gaz ve stratejik rezerv tarafini ayni sey gibi yazma.
+4. Enerji TUFE baskisini tuketiciye yansiyan kisim olarak ayri vurgula.
+5. Sadece gecerli JSON don. Markdown veya ek metin verme.
+6. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildCurrencyPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde doviz ve kur dinamiklerini yorumlayan bir analiz katmanisin.
+Bu kategori majör kurlar, dolar rejimi ve ticaret agirlikli rekabet gucu uzerinden dis denge ve finansman baskisini okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = yuksek kur baskisi, 100 = daha dengeli dis kur rejimi)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Yen, yuan ve real tarafini ayni kategoriye sıkıştırma; her biri farkli stres kanalidir.
+4. REER ve ticaret agirlikli dolar endeksini dolar rejimi olarak ayri degerlendir.
+5. Sadece gecerli JSON don. Markdown veya ek metin verme.
+6. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildPublicFinancePrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde kamu maliyesi ve sovereign borc rejimini yorumlayan bir analiz katmanisin.
+Bu kategori butce dengesi, borc yukü, nominal/reel faiz ve getiri egrisi uzerinden devlet finansman stresini okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = mali baski ve borclanma stresi, 100 = daha dengeli mali zemin)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. Bütce ve borc metriklerini faiz seviyesinden ayri yorumla.
+4. Reel faiz ile nominal faizi karistirma.
+5. Sadece gecerli JSON don. Markdown veya ek metin verme.
+6. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function buildEmergingMarketsPrompt(input: {
+  categoryName: string;
+  categoryDescription: string | null;
+  categoryScore: number | string;
+  metricBlock: string;
+}) {
+  return `
+Sen "Mergen Intelligence" icinde gelismekte olan piyasalar rejimini yorumlayan bir analiz katmanisin.
+Bu kategori EM hisse ve tahvil risk istahini, bolgesel ayrismayi ve dis finansman kirilganligini okumak icin kullaniliyor.
+
+Kategori: ${input.categoryName}
+Kategori Açıklaması: ${input.categoryDescription || 'Yok'}
+Kategori Güncel Skoru: ${input.categoryScore} / 100 (0 = yuksek EM stresi, 100 = destekleyici EM rejimi)
+
+Metrikler:
+${input.metricBlock}
+
+Kurallar:
+1. expert_summary alaninda 4-5 cumlelik profesyonel yorum ver.
+2. simple_summary alaninda bunu normal bir insanin kolay anlayacagi sekilde 3-4 cumlede yeniden anlat.
+3. EEM ve EMB tarafini hisse/tahvil ayrisimi olarak oku.
+4. Cin ve Brezilya eksenini bolgesel hikaye olarak ayri degerlendir.
+5. Sadece gecerli JSON don. Markdown veya ek metin verme.
+6. JSON su sekilde olsun: {"expert_summary":"...","simple_summary":"...","confidence":4}
+`;
+}
+
+function parseEiaSprObservations(html: string, observationStart?: string) {
+  const monthDates = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+  const observations: TimeSeriesObservation[] = [];
+  const lines = html
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\u00a0/g, ' ').trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    if (!/^\d{4}\b/.test(line)) {
+      continue;
+    }
+
+    const parts = line.split(/\s+/);
+    const year = Number(parts[0]);
+    const rawValues = parts.slice(1, 13);
+
+    if (!Number.isFinite(year) || rawValues.length === 0) {
+      continue;
+    }
+
+    rawValues.forEach((rawValue, index) => {
+      if (!rawValue || ['-', '--', 'NA', 'W'].includes(rawValue)) {
+        return;
+      }
+
+      const numeric = Number(rawValue.replace(/,/g, ''));
+      if (!Number.isFinite(numeric)) {
+        return;
+      }
+
+      observations.push({
+        date: `${year}-${monthDates[index]}-01`,
+        value: String(numeric),
+      });
+    });
+  }
+
+  return observationStart
+    ? observations.filter((entry) => entry.date >= observationStart)
+    : observations;
+}
+
 function buildMarketOverviewPrompt(input: {
   totalScore: number | string;
   totalTrend: string;
@@ -335,6 +853,91 @@ function buildStoredSummary(input: {
 
   parts.push(`[CONFIDENCE:${input.confidence}]`);
   return parts.join('\n\n');
+}
+
+function normalizeAiError(error: any) {
+  const rawMessage =
+    typeof error?.message === 'string'
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : 'Failed to generate AI insight';
+
+  const normalized = rawMessage.toLowerCase();
+  if (
+    normalized.includes('429') ||
+    normalized.includes('quota') ||
+    normalized.includes('rate limit') ||
+    normalized.includes('resource_exhausted') ||
+    normalized.includes('generate_content_free_tier_requests')
+  ) {
+    return {
+      status: 429,
+      message:
+        'Gemini kotasi dolu. Yeni AI yorumu simdi uretemiyorum. Biraz sonra tekrar deneyebilir ya da mevcut kayitli yorumu kullanabilirsin.',
+    };
+  }
+
+  if (
+    normalized.includes('503') ||
+    normalized.includes('unavailable') ||
+    normalized.includes('high demand')
+  ) {
+    return {
+      status: 503,
+      message:
+        'Gemini su anda yogunluk altinda. Sistem birkaç kez denese de yanit alamadi. Biraz sonra tekrar dene.',
+    };
+  }
+
+  return {
+    status: 500,
+    message: rawMessage,
+  };
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function generateGeminiJson(prompt: string) {
+  let lastError: any = null;
+  const retryDelays = [0, 1200, 2500];
+  const turkishInstruction = `
+Tum ciktilari, ozellikle expert_summary ve simple_summary alanlarini, akici ve dogal Turkce yaz.
+Ingilizce cumle kurma.
+Ingilizce finansal terim gerekiyorsa sadece kisaltma veya yerlesik piyasa terimi olarak kullan; aciklayici cumleler mutlaka Turkce olsun.
+JSON icindeki metinlerin dili tamamen Turkce olmalidir.
+`;
+
+  for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+    if (retryDelays[attempt] > 0) {
+      await sleep(retryDelays[attempt]);
+    }
+
+    try {
+      return await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: `${turkishInstruction}\n${prompt}`,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+    } catch (error: any) {
+      lastError = error;
+      const normalized = String(error?.message || error).toLowerCase();
+      const retryable =
+        normalized.includes('503') ||
+        normalized.includes('unavailable') ||
+        normalized.includes('high demand');
+
+      if (!retryable || attempt === retryDelays.length - 1) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Gemini request failed');
 }
 
 function buildCryptoMarketsPrompt(input: {
@@ -486,38 +1089,95 @@ async function startServer() {
     }
   });
 
-  // Proxy route for FRED API to bypass CORS
-  app.get("/api/fred/series", async (req, res) => {
-    const { series_id, observation_start, limit } = req.query;
-    
-    // Check for API key in environment variables (both with and without VITE_ prefix for compatibility)
-    const apiKey = process.env.FRED_API_KEY || process.env.VITE_FRED_API_KEY;
-    
-    if (!apiKey) {
-      return res.status(500).json({ error: "FRED_API_KEY is missing in environment variables" });
+  app.get('/api/crypto/series', async (req, res) => {
+    const { series_id } = req.query;
+
+    if (!series_id || typeof series_id !== 'string') {
+      return res.status(400).json({ error: 'series_id is required' });
     }
 
     try {
-      let url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series_id}&api_key=${apiKey}&file_type=json&sort_order=desc`;
-      
-      if (observation_start) {
-        url += `&observation_start=${observation_start}`;
-      }
-      if (limit) {
-        url += `&limit=${limit}`;
+      const observations = await fetchCryptoSeries(series_id);
+      res.json({ observations });
+    } catch (error: any) {
+      console.error('Crypto series fetch error:', series_id, error);
+      res.status(500).json({ error: error?.message || 'Failed to fetch crypto series' });
+    }
+  });
+
+  // Proxy route for FRED API to bypass CORS
+  app.get("/api/fred/series", async (req, res) => {
+    const { series_id, observation_start, limit } = req.query;
+    const apiKey = process.env.FRED_API_KEY || process.env.VITE_FRED_API_KEY;
+    const seriesId = String(series_id || '');
+    const observationStart = typeof observation_start === 'string' ? observation_start : undefined;
+    const limitValue = typeof limit === 'string' ? Number(limit) : undefined;
+
+    if (!seriesId) {
+      return res.status(400).json({ error: "series_id is required" });
+    }
+
+    try {
+      if (apiKey) {
+        let url = `https://api.stlouisfed.org/fred/series/observations?series_id=${seriesId}&api_key=${apiKey}&file_type=json&sort_order=desc`;
+
+        if (observationStart) {
+          url += `&observation_start=${observationStart}`;
+        }
+        if (limitValue) {
+          url += `&limit=${limitValue}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (response.ok && Array.isArray(data?.observations) && data.observations.length > 0) {
+          return res.json(data);
+        }
+
+        console.warn(`FRED API fallback activated for ${seriesId}`, data);
       }
 
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        return res.status(response.status).json(data);
+      const csvUrl = `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${encodeURIComponent(seriesId)}`;
+      const csvResponse = await fetch(csvUrl);
+
+      if (!csvResponse.ok) {
+        return res.status(csvResponse.status).json({ error: `Failed to fetch FRED CSV for ${seriesId}` });
       }
-      
-      res.json(data);
+
+      const csv = await csvResponse.text();
+      const observations = parseFredCsv(csv, observationStart);
+      const slicedObservations = limitValue ? observations.slice(0, limitValue) : observations;
+
+      return res.json({
+        observations: slicedObservations,
+        source: 'fred_csv_fallback',
+      });
     } catch (error) {
       console.error("Error fetching from FRED:", error);
       res.status(500).json({ error: "Failed to fetch from FRED API" });
+    }
+  });
+
+  app.get("/api/eia/spr", async (req, res) => {
+    const { observation_start } = req.query;
+
+    try {
+      const response = await fetch('https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=M&n=PET&s=MCSSTUS1');
+      if (!response.ok) {
+        return res.status(response.status).json({ error: `EIA SPR fetch failed with ${response.status}` });
+      }
+
+      const html = await response.text();
+      const observations = parseEiaSprObservations(
+        html,
+        typeof observation_start === 'string' ? observation_start : undefined,
+      );
+
+      res.json({ observations });
+    } catch (error) {
+      console.error("Error fetching EIA SPR data:", error);
+      res.status(500).json({ error: "Failed to fetch EIA SPR data" });
     }
   });
 
@@ -641,6 +1301,13 @@ async function startServer() {
               categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
               metricBlock,
             })
+          : categoryId === FED_POWER_CATEGORY_ID
+            ? buildFedPowerPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
           : categoryId === ETF_FLOWS_CATEGORY_ID
             ? buildEtfCapitalFlowsPrompt({
                 categoryName: category.name,
@@ -662,8 +1329,71 @@ async function startServer() {
                 categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
                 metricBlock,
               })
+          : categoryId === ENERGY_SECURITY_CATEGORY_ID
+            ? buildEnergyPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === CURRENCY_DYNAMICS_CATEGORY_ID
+            ? buildCurrencyPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === PUBLIC_FINANCE_CATEGORY_ID
+            ? buildPublicFinancePrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === EMERGING_MARKETS_CATEGORY_ID
+            ? buildEmergingMarketsPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
           : categoryId === CRYPTO_CATEGORY_ID
             ? buildCryptoMarketsPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === CREDIT_STRESS_CATEGORY_ID
+            ? buildCreditStressPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === LIQUIDITY_CATEGORY_ID
+            ? buildLiquidityPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === REAL_ECONOMY_CATEGORY_ID
+            ? buildRealEconomyPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === INFLATION_CATEGORY_ID
+            ? buildInflationPrompt({
+                categoryName: category.name,
+                categoryDescription: category.description,
+                categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
+                metricBlock,
+              })
+          : categoryId === GLOBAL_RISK_CATEGORY_ID
+            ? buildGlobalRiskPrompt({
                 categoryName: category.name,
                 categoryDescription: category.description,
                 categoryScore: categoryScore ? categoryScore.score : 'Bilinmiyor',
@@ -676,10 +1406,7 @@ async function startServer() {
               metricBlock,
             });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
+      const response = await generateGeminiJson(prompt);
 
       const rawSummary = response.text;
       if (!rawSummary) {
@@ -708,7 +1435,8 @@ async function startServer() {
       res.json({ ok: true, summary });
     } catch (error: any) {
       console.error("AI category insight error:", error);
-      res.status(500).json({ error: error?.message || "Failed to generate AI insight" });
+      const normalized = normalizeAiError(error);
+      res.status(normalized.status).json({ error: normalized.message });
     }
   });
 
@@ -767,10 +1495,7 @@ async function startServer() {
         alertBlock,
       });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-      });
+      const response = await generateGeminiJson(prompt);
 
       const rawSummary = response.text;
       if (!rawSummary) {
@@ -799,7 +1524,8 @@ async function startServer() {
       res.json({ ok: true, summary });
     } catch (error: any) {
       console.error("AI market overview error:", error);
-      res.status(500).json({ error: error?.message || "Failed to generate market overview" });
+      const normalized = normalizeAiError(error);
+      res.status(normalized.status).json({ error: normalized.message });
     }
   });
 

@@ -58,7 +58,7 @@ VALUES
   (
     '40000000-0000-0000-0000-000000000005',
     '30000000-0000-0000-0000-000000000010',
-    'Brezilya Reali / ABD Dolari',
+    'Brezilya Reali / ABD Doları Kuru',
     'DEXBZUS',
     'FRED',
     'EM kur stresi ve sermaye cikisi proxy gostergesi. Real zayiflayinca EM geneli dolar stresini temsil eder.',

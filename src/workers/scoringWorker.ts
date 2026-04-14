@@ -10,6 +10,7 @@ const ENERGY_SECURITY_CATEGORY_ID = '30000000-0000-0000-0000-000000000007';
 const CURRENCY_DYNAMICS_CATEGORY_ID = '30000000-0000-0000-0000-000000000008';
 const PUBLIC_FINANCE_CATEGORY_ID = '30000000-0000-0000-0000-000000000009';
 const EMERGING_MARKETS_CATEGORY_ID = '30000000-0000-0000-0000-000000000010';
+const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
 const DIRECT_SCORE_SOURCES = new Set(['FED_MANUAL', 'FED_SPEECH', 'ETF_MANUAL', 'STRATEGIC_VALUE']);
 
 function getMetricLookbackYears(metric: { source: string; category_id: string; symbol: string }) {
@@ -21,7 +22,7 @@ function getMetricLookbackYears(metric: { source: string; category_id: string; s
     return 8;
   }
 
-  if (metric.source === 'FRED' || metric.source === 'YAHOO' || metric.source === 'FRED_COMPOSITE') {
+  if (metric.source === 'FRED' || metric.source === 'YAHOO' || metric.source === 'FRED_COMPOSITE' || metric.source === 'CRYPTO_API') {
     return 10;
   }
 
@@ -65,17 +66,45 @@ function getMinimumMetricsRequired(categoryId: string) {
     return 3;
   }
 
+  if (categoryId === CRYPTO_CATEGORY_ID) {
+    return 4;
+  }
+
   return 3;
 }
 
-export async function runScoringEngine() {
+export async function runScoringEngine(scopeCategoryId?: string) {
   console.log('Starting Scoring Engine...');
   
-  // 1. Tüm metrikleri çek
-  const { data: metrics, error: metricsError } = await supabase.from('metrics').select('*');
+  let metricsQuery = supabase.from('metrics').select('*');
+  if (scopeCategoryId) {
+    metricsQuery = metricsQuery.eq('category_id', scopeCategoryId);
+  }
+
+  // 1. Metrikleri çek
+  const { data: metrics, error: metricsError } = await metricsQuery;
   if (metricsError || !metrics) {
     console.error('Error fetching metrics:', metricsError);
     return;
+  }
+
+  const metricIds = metrics.map((metric) => metric.id);
+  const { data: metricRows, error: metricRowsError } = await supabase
+    .from('metric_values')
+    .select('metric_id, value, date')
+    .in('metric_id', metricIds)
+    .order('date', { ascending: false });
+
+  if (metricRowsError) {
+    console.error('Error fetching metric values:', metricRowsError);
+    return;
+  }
+
+  const rowsByMetricId = new Map<string, Array<{ value: number | string; date: string }>>();
+  for (const row of metricRows ?? []) {
+    const existing = rowsByMetricId.get(row.metric_id) ?? [];
+    existing.push({ value: row.value, date: row.date });
+    rowsByMetricId.set(row.metric_id, existing);
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -83,27 +112,14 @@ export async function runScoringEngine() {
 
   // 2. Her metrik için skor hesapla
   for (const metric of metrics) {
-    // Metriğin tüm geçmiş verilerini çek
-    const { data: values, error: valuesError } = await supabase
-      .from('metric_values')
-      .select('value, date')
-      .eq('metric_id', metric.id);
-      
-    if (valuesError || !values || values.length === 0) {
+    const values = rowsByMetricId.get(metric.id) || [];
+
+    if (values.length === 0) {
       console.log(`No historical data for metric ${metric.symbol}, skipping.`);
       continue;
     }
 
-    // En güncel veriyi bul (tarihe göre azalan sırada ilk kayıt)
-    const { data: latestValueData } = await supabase
-      .from('metric_values')
-      .select('value, date')
-      .eq('metric_id', metric.id)
-      .order('date', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!latestValueData) continue;
+    const latestValueData = values[0];
 
     const currentValue = Number(latestValueData.value);
     const latestDate = new Date(latestValueData.date);
@@ -142,7 +158,11 @@ export async function runScoringEngine() {
   }
 
   // 3. Kategori Skorlarını Hesapla
-  const { data: categories } = await supabase.from('categories').select('*');
+  let categoriesQuery = supabase.from('categories').select('*');
+  if (scopeCategoryId) {
+    categoriesQuery = categoriesQuery.eq('id', scopeCategoryId);
+  }
+  const { data: categories } = await categoriesQuery;
   const totalScoresList: { score: number; weight: number }[] = [];
 
   if (categories) {
@@ -171,6 +191,28 @@ export async function runScoringEngine() {
   }
 
   // 4. Genel Mergen Index Skorunu Hesapla
+  if (scopeCategoryId) {
+    const { data: allCategories } = await supabase.from('categories').select('id, weight');
+    const { data: categoryScoreRows } = await supabase
+      .from('scores')
+      .select('entity_id, score, date')
+      .eq('entity_type', 'category')
+      .order('date', { ascending: false });
+
+    const latestCategoryScoreMap = new Map<string, number>();
+    for (const row of categoryScoreRows ?? []) {
+      if (!latestCategoryScoreMap.has(row.entity_id)) {
+        latestCategoryScoreMap.set(row.entity_id, Number(row.score));
+      }
+    }
+
+    for (const category of allCategories ?? []) {
+      const score = latestCategoryScoreMap.get(category.id);
+      if (score === undefined) continue;
+      totalScoresList.push({ score, weight: Number(category.weight) });
+    }
+  }
+
   if (totalScoresList.length > 0) {
     const totalScore = calculateCategoryScore(totalScoresList);
     console.log(`Total Mergen Index -> Score: ${totalScore}`);

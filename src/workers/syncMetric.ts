@@ -7,7 +7,29 @@ type SyncMetricInput = {
   name: string;
 };
 
-const SUPPORTED_DIRECT_SOURCES = new Set(['FRED', 'YAHOO', 'FRED_COMPOSITE']);
+const SUPPORTED_DIRECT_SOURCES = new Set([
+  'FRED',
+  'YAHOO',
+  'FRED_COMPOSITE',
+  'CRYPTO_API',
+  'INFLATION_MANUAL',
+  'GLOBAL_RISK_MANUAL',
+  'CREDIT_MANUAL',
+  'REAL_ECON_MANUAL',
+  'SOCIAL_MANUAL',
+  'TECH_MANUAL',
+  'FED_MANUAL',
+  'FED_SPEECH',
+  'ETF_MANUAL',
+  'PRECIOUS_MANUAL',
+  'AGRI_MANUAL',
+  'EDELMAN',
+  'ELECTION_DATA',
+  'EM_MANUAL',
+  'SOVEREIGN_MANUAL',
+  'FX_MANUAL',
+  'ENERGY_MANUAL',
+]);
 
 export async function syncMetric(metric: SyncMetricInput) {
   if (SUPPORTED_DIRECT_SOURCES.has(metric.source)) {

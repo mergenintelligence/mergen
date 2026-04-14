@@ -74,6 +74,136 @@ VALUES
     'MicroStrategy hissesi. Kaldıraçlı BTC exposure proxy ve kurumsal Bitcoin birikimi anlatisinin amplifikator gostergesi.',
     false,
     1.0
+  ),
+  (
+    '41000000-0000-0000-0000-000000000007',
+    '30000000-0000-0000-0000-000000000011',
+    'BTC Dominance',
+    'BTC.D',
+    'CRYPTO_API',
+    'Bitcoin piyasa degerinin toplam kripto piyasa degerine oranini gosteren piyasa liderligi metrigidir.',
+    false,
+    1.5
+  ),
+  (
+    '41000000-0000-0000-0000-000000000008',
+    '30000000-0000-0000-0000-000000000011',
+    'Stablecoin Dominance',
+    'USDT.D',
+    'CRYPTO_API',
+    'Toplam stablecoin piyasa degerinin toplam kripto piyasa degerine oranini gosteren savunmaci likidite metrigidir.',
+    true,
+    1.2
+  ),
+  (
+    '41000000-0000-0000-0000-000000000009',
+    '30000000-0000-0000-0000-000000000011',
+    'Toplam Kripto Piyasa Degeri',
+    'TOTAL',
+    'CRYPTO_API',
+    'Toplam kripto piyasa degeri; risk istahinin en genis capli barometresi.',
+    false,
+    1.5
+  ),
+  (
+    '41000000-0000-0000-0000-000000000010',
+    '30000000-0000-0000-0000-000000000011',
+    'Toplam Piyasa Degeri (BTC Haric)',
+    'TOTAL2',
+    'CRYPTO_API',
+    'Bitcoin haric toplam piyasa degeri; altcoin genisligini olcer.',
+    false,
+    1.2
+  ),
+  (
+    '41000000-0000-0000-0000-000000000011',
+    '30000000-0000-0000-0000-000000000011',
+    'Toplam Piyasa Degeri (BTC ve ETH Haric)',
+    'TOTAL3',
+    'CRYPTO_API',
+    'Bitcoin ve Ethereum haric toplam piyasa degeri; spekulatif altcoin genisligini olcer.',
+    false,
+    1.0
+  ),
+  (
+    '41000000-0000-0000-0000-000000000012',
+    '30000000-0000-0000-0000-000000000011',
+    'Open Interest',
+    'OPEN_INTEREST',
+    'CRYPTO_API',
+    'BTC vadeli islemlerinde acik pozisyon buyuklugu; kaldirac birikimini temsil eder.',
+    true,
+    1.2
+  ),
+  (
+    '41000000-0000-0000-0000-000000000013',
+    '30000000-0000-0000-0000-000000000011',
+    'Funding Rates',
+    'FUNDING_RATES',
+    'CRYPTO_API',
+    'BTC perpetual kontratlarinda fonlama oranlari; long-short dengesini ve kalabalik yonlenmeyi gosterir.',
+    true,
+    1.2
+  ),
+  (
+    '41000000-0000-0000-0000-000000000014',
+    '30000000-0000-0000-0000-000000000011',
+    'Liquidation Heatmap',
+    'LIQUIDATION_HEATMAP',
+    'CRYPTO_API',
+    'Son tasfiye birikimini temsil eden kaldirac stresi proxy gostergesi.',
+    true,
+    1.0
+  ),
+  (
+    '41000000-0000-0000-0000-000000000015',
+    '30000000-0000-0000-0000-000000000011',
+    'Total Stablecoin Market Cap',
+    'TOTAL_STABLECOIN_MCAP',
+    'CRYPTO_API',
+    'Kripto ekosistemindeki toplam stablecoin likiditesini temsil eder.',
+    false,
+    1.3
+  ),
+  (
+    '41000000-0000-0000-0000-000000000016',
+    '30000000-0000-0000-0000-000000000011',
+    'Net Stablecoin Exchange Inflow/Outflow',
+    'NET_STABLECOIN_FLOW',
+    'CRYPTO_API',
+    'Stablecoin likiditesindeki net degisimi ve sisteme giren veya cikan taze sermaye yonunu temsil eder.',
+    false,
+    1.0
+  ),
+  (
+    '41000000-0000-0000-0000-000000000017',
+    '30000000-0000-0000-0000-000000000011',
+    'Tether (USDT) Printing',
+    'USDT_PRINTING',
+    'CRYPTO_API',
+    'USDT piyasa degerindeki kisa vadeli artis; sisteme eklenen yeni stablecoin likiditesi proxy gostergesi.',
+    false,
+    1.0
+  ),
+  (
+    '41000000-0000-0000-0000-000000000018',
+    '30000000-0000-0000-0000-000000000011',
+    'Google Trends Bitcoin',
+    'GOOGLE_TRENDS_BTC',
+    'CRYPTO_API',
+    'Google Trends uzerinden Bitcoin arama ilgisi; perakende ilgi ve anlati sicakligini temsil eder.',
+    false,
+    0.8
+  ),
+  (
+    '41000000-0000-0000-0000-000000000019',
+    '30000000-0000-0000-0000-000000000011',
+    'Circle Internet Group',
+    'CRCL',
+    'YAHOO',
+    'Circle hissesi. Stablecoin altyapisinin ve regule edilmis dolar token anlatısının halka acik sirket barometresi.',
+    false,
+    1.0
   )
 ON CONFLICT (symbol) DO UPDATE SET
   category_id = EXCLUDED.category_id,

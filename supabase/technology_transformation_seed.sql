@@ -21,7 +21,7 @@ VALUES
     'Mag Seven Index',
     'MAGS',
     'YAHOO',
-    'Magnificent Seven temasini temsil eden piyasa bazli teknoloji yogunlasma gostergesi.',
+    'Magnificent Seven temasını temsil eden piyasa bazlı teknoloji yoğunlaşma göstergesi.',
     false,
     2.0
   ),
@@ -31,7 +31,7 @@ VALUES
     'iShares IGV',
     'IGV',
     'YAHOO',
-    'Genis yazilim ve uygulama ekosistemini temsil eden teknoloji ETF gostergesi.',
+    'BlackRock iShares çatısı altındaki bu ETF, geniş yazılım ve uygulama ekosisteminin genel sağlığını temsil eder.',
     false,
     1.5
   ),

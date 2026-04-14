@@ -64,6 +64,46 @@ VALUES
     'SOFR ile IORB arasindaki spread; kisa vadeli fonlama stresi gostergesi.',
     true,
     1.5
+  ),
+  (
+    '20000000-0000-0000-0000-000000000019',
+    '10000000-0000-0000-0000-000000000001',
+    'St. Louis Fed Finansal Stres Endeksi',
+    'STLFSI4',
+    'FRED',
+    '18 farkli finansal veri serisinden olusan genel sistemik stres gostergesi.',
+    true,
+    2.0
+  ),
+  (
+    '20000000-0000-0000-0000-000000000020',
+    '10000000-0000-0000-0000-000000000001',
+    'Chicago Fed Ulusal Finansal Kosullar Endeksi',
+    'NFCI',
+    'FRED',
+    'Risk, kredi ve kaldirac bilesenlerini tek seride birlestiren finansal kosullar gostergesi.',
+    true,
+    1.8
+  ),
+  (
+    '20000000-0000-0000-0000-000000000021',
+    '10000000-0000-0000-0000-000000000001',
+    'Banka Kredileri - Tum Ticari Bankalar',
+    'TOTBKCR',
+    'FRED',
+    'Tum ticari bankalar tarafindan verilen toplam kredi; kredi genislemesi ve duraksama sinyali.',
+    false,
+    1.5
+  ),
+  (
+    '20000000-0000-0000-0000-000000000022',
+    '10000000-0000-0000-0000-000000000001',
+    '10Y-2Y Getiri Egrisi',
+    'T10Y2Y',
+    'FRED',
+    '10 yillik ile 2 yillik Hazine faizi arasindaki fark. Egri sifirin altina indikce resesyon sinyali guclenir.',
+    false,
+    1.8
   )
 ON CONFLICT (symbol) DO UPDATE SET
   category_id = EXCLUDED.category_id,

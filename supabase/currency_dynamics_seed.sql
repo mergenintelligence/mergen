@@ -18,7 +18,7 @@ VALUES
   (
     '38000000-0000-0000-0000-000000000001',
     '30000000-0000-0000-0000-000000000008',
-    'CurrencyShares Japon Yeni ETF',
+    'Invesco CurrencyShares Japanese Yen Trust',
     'FXY',
     'YAHOO',
     'Yen carry trade konumlanmasinin ETF proxy gostergesi. Yen guclendiginde carry unwinding riskini temsil eder.',
@@ -28,7 +28,7 @@ VALUES
   (
     '38000000-0000-0000-0000-000000000002',
     '30000000-0000-0000-0000-000000000008',
-    'Japon Yeni / ABD Dolari Kuru',
+    'Japon Yeni / ABD Doları Kuru',
     'DEXJPUS',
     'FRED',
     'FRED gunluk JPY/USD kuru. Yuksek deger (zayif yen) carry trade cozulme riskini arttirir.',
@@ -38,7 +38,7 @@ VALUES
   (
     '38000000-0000-0000-0000-000000000003',
     '30000000-0000-0000-0000-000000000008',
-    'ABD Reel Genis Efektif Doviz Kuru (REER)',
+    'ABD Reel Geniş Efektif Döviz Kuru (BIS REER)',
     'RBUSBIS',
     'FRED',
     'BIS kaynakli ABD reel genis efektif kuru. Cok pahalilasan dolar ihracat kaybi ve devalüasyon riskini arttirir.',
@@ -48,7 +48,7 @@ VALUES
   (
     '38000000-0000-0000-0000-000000000004',
     '30000000-0000-0000-0000-000000000008',
-    'Cin Yuani / ABD Dolari Kuru',
+    'Çin Yuanı / ABD Doları Kuru',
     'DEXCHUS',
     'FRED',
     'FRED gunluk CNY/USD kuru. Yuan zayiflamasi dolarizasyon basincini ve EM sermaye cikisini temsil eder.',
@@ -58,7 +58,7 @@ VALUES
   (
     '38000000-0000-0000-0000-000000000005',
     '30000000-0000-0000-0000-000000000008',
-    'Fed Ticaret Agirlikli Dolar Endeksi',
+    'Fed Geniş Ticaret Ağırlıklı Dolar Endeksi',
     'DTWEXBGSR',
     'FRED',
     'Federal Reserve genis nominal ticaret agirlikli dolar endeksi (revize seri). DX-Y.NYB dan farkli olarak daha genis bir sepeti kapsar.',

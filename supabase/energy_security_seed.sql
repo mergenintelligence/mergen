@@ -18,7 +18,7 @@ VALUES
   (
     '37000000-0000-0000-0000-000000000001',
     '30000000-0000-0000-0000-000000000007',
-    'Brent Ham Petrol Vadeli',
+    'ICE Brent Crude Oil Futures',
     'BZ=F',
     'YAHOO',
     'Brent-WTI spread analizinin Brent ayagi; jeopolitik risk ve uluslararasi arz kirilganligini temsil eder.',
@@ -28,7 +28,7 @@ VALUES
   (
     '37000000-0000-0000-0000-000000000002',
     '30000000-0000-0000-0000-000000000007',
-    'Henry Hub Dogalgaz Vadeli',
+    'Henry Hub Natural Gas Futures',
     'NG=F',
     'YAHOO',
     'ABD dogalgaz fiyati; TTF-Henry Hub makasinin temel gostergesi ve LNG sevkiyat dinamiklerinin proxy verisi.',
@@ -38,7 +38,7 @@ VALUES
   (
     '37000000-0000-0000-0000-000000000003',
     '30000000-0000-0000-0000-000000000007',
-    'United States Oil Fund (WTI)',
+    'United States Oil Fund ETF',
     'USO',
     'YAHOO',
     'WTI ham petrol ETF gostergesi; Brent ile birlikte enerji spread analizinde kullanilir.',
@@ -48,7 +48,7 @@ VALUES
   (
     '37000000-0000-0000-0000-000000000004',
     '30000000-0000-0000-0000-000000000007',
-    'ABD Stratejik Petrol Rezervi',
+    'ABD Stratejik Petrol Rezervi (SPR)',
     'WCSSTUS1',
     'FRED',
     'ABD stratejik petrol rezervi haftalik stok seviyesi (bin varil). Dusen rezerv gelecekteki zorla alim talebini ve fiyat tabanini isaret eder.',
@@ -58,7 +58,7 @@ VALUES
   (
     '37000000-0000-0000-0000-000000000005',
     '30000000-0000-0000-0000-000000000007',
-    'Enerji TUFE Baski Endeksi',
+    'Enerji TÜFE Baskı Endeksi',
     'CPIENGSL',
     'FRED',
     'Enerji kalemlerinin genel TUFE icindeki fiyat degisimi. Enerji enflasyonunun kuresel maliyet tabanina geciskenligini olcer.',
@@ -68,7 +68,7 @@ VALUES
   (
     '37000000-0000-0000-0000-000000000006',
     '30000000-0000-0000-0000-000000000007',
-    'US Natural Gas ETF (TTF Proxy)',
+    'United States Natural Gas Fund ETF',
     'UNG',
     'YAHOO',
     'ABD dogalgaz ETF; Avrupa TTF fiyati ile karsilastirmali gaz spread analizinde kullanilan proxy gosterge.',

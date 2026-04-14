@@ -18,7 +18,7 @@ VALUES
   (
     '36000000-0000-0000-0000-000000000001',
     '30000000-0000-0000-0000-000000000006',
-    'Teucrium Wheat Fund',
+    'Teucrium Wheat Fund ETF',
     'WEAT',
     'YAHOO',
     'Bugday fiyat ve arz stresi icin tarimsal temel tahil gostergesi.',
@@ -28,7 +28,7 @@ VALUES
   (
     '36000000-0000-0000-0000-000000000002',
     '30000000-0000-0000-0000-000000000006',
-    'Teucrium Corn Fund',
+    'Teucrium Corn Fund ETF',
     'CORN',
     'YAHOO',
     'Misir fiyat ve yem/enerji baglantili tarimsal baski gostergesi.',
@@ -38,7 +38,7 @@ VALUES
   (
     '36000000-0000-0000-0000-000000000003',
     '30000000-0000-0000-0000-000000000006',
-    'Teucrium Soybean Fund',
+    'Teucrium Soybean Fund ETF',
     'SOYB',
     'YAHOO',
     'Soya zinciri uzerinden protein, yem ve tarimsal ticaret baskisi gostergesi.',
@@ -48,7 +48,7 @@ VALUES
   (
     '36000000-0000-0000-0000-000000000004',
     '30000000-0000-0000-0000-000000000006',
-    'Invesco DB Agriculture Fund',
+    'Invesco DB Agriculture Fund ETF',
     'DBA',
     'YAHOO',
     'Genis tarimsal emtia sepeti ile gida tarafindaki yaygin fiyat baskisini temsil eder.',
@@ -68,7 +68,7 @@ VALUES
   (
     '36000000-0000-0000-0000-000000000006',
     '30000000-0000-0000-0000-000000000006',
-    'Teucrium Sugar Fund',
+    'Teucrium Sugar Fund ETF',
     'CANE',
     'YAHOO',
     'Seker fiyatlari uzerinden gida zinciri ve tropikal arz stresi gostergesi.',

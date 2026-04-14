@@ -9,3 +9,4 @@ coverage/
 .env
 .env.local
 .vercel
+data/social-stability/vdem_country_year_core.csv

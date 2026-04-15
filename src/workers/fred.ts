@@ -618,6 +618,83 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
       DARK_SPREAD: { base: 17, slope: 0.05, amplitude: 1.7 },
       LITHIUM_CARBONATE_SPOT: { base: 12500, slope: 85, amplitude: 650 },
     };
+    const predictionManualSeriesConfig: Record<string, { base: number; slope: number; amplitude?: number }> = {
+      PM_TOTAL_OPEN_INTEREST: { base: 118, slope: 4.8, amplitude: 11 },
+      PM_VOLUME_24H: { base: 18, slope: 0.55, amplitude: 3.2 },
+      PM_VOLUME_7D: { base: 104, slope: 2.8, amplitude: 8.5 },
+      PM_ACTIVE_MARKET_COUNT: { base: 42, slope: 0.6, amplitude: 2.4 },
+      PM_MACRO_MARKET_COUNT: { base: 18, slope: 0.25, amplitude: 1.2 },
+      PM_AVG_BID_ASK_SPREAD: { base: 6.8, slope: -0.04, amplitude: 0.35 },
+      PM_AVG_MARKET_DEPTH: { base: 71, slope: 0.45, amplitude: 3.5 },
+      PM_CONSENSUS_STRENGTH: { base: 58, slope: 0.3, amplitude: 2.2 },
+      PM_UNCERTAINTY_DENSITY: { base: 44, slope: -0.12, amplitude: 2.4 },
+      PM_MARKET_CONFIDENCE_SCORE: { base: 55, slope: 0.28, amplitude: 2.1 },
+      PM_FED_CUT_PROB: { base: 39, slope: 0.22, amplitude: 3.8 },
+      PM_YEAR_END_FED_PATH: { base: 4.65, slope: -0.03, amplitude: 0.12 },
+      PM_US_INFLATION_UPSURPRISE_PROB: { base: 36, slope: -0.08, amplitude: 2.6 },
+      PM_US_RECESSION_PROB: { base: 28, slope: 0.16, amplitude: 2.9 },
+      PM_SOFT_LANDING_PROB: { base: 41, slope: 0.11, amplitude: 2.3 },
+      PM_CREDIT_SPREAD_WIDENING_PROB: { base: 33, slope: 0.08, amplitude: 2.4 },
+      PM_OIL_SHOCK_PROB: { base: 22, slope: 0.05, amplitude: 2.8 },
+      PM_WAR_ESCALATION_PROB: { base: 18, slope: 0.09, amplitude: 3.2 },
+      PM_DEBT_CEILING_CRISIS_PROB: { base: 24, slope: -0.02, amplitude: 2.1 },
+      PM_GENERAL_SCORE: { base: 54, slope: 0.22, amplitude: 2.4 },
+      PM_MACRO_RISK_SCORE: { base: 47, slope: 0.12, amplitude: 2.8 },
+      PM_RECESSION_PRICING_SCORE: { base: 36, slope: 0.16, amplitude: 2.5 },
+      PM_INFLATION_PRICING_SCORE: { base: 42, slope: -0.07, amplitude: 2.7 },
+      PM_VS_BONDS_DIVERGENCE: { base: 11, slope: 0.04, amplitude: 1.6 },
+      PM_VS_GOLD_DIVERGENCE: { base: 9, slope: 0.03, amplitude: 1.4 },
+    };
+    const derivativesManualSeriesConfig: Record<string, { base: number; slope: number; amplitude?: number }> = {
+      VIX_DERIV: { base: 19, slope: 0.05, amplitude: 3.2 }, VIX3M_DERIV: { base: 22, slope: 0.04, amplitude: 2.8 }, VVIX_DERIV: { base: 96, slope: 0.18, amplitude: 8 }, MOVE_DERIV: { base: 112, slope: 0.08, amplitude: 9 },
+      OVX_DERIV: { base: 34, slope: 0.05, amplitude: 4.5 }, GVZ_DERIV: { base: 15, slope: 0.02, amplitude: 1.6 }, VIX_VIX3M_RATIO: { base: 0.92, slope: 0.002, amplitude: 0.06 }, EQUITY_BOND_VOL_SPREAD: { base: -92, slope: 0.3, amplitude: 8 },
+      PUT_CALL_RATIO_DERIV: { base: 0.88, slope: 0.004, amplitude: 0.07 }, EQUITY_PUT_CALL_RATIO: { base: 0.72, slope: 0.003, amplitude: 0.06 }, INDEX_PUT_CALL_RATIO: { base: 1.18, slope: 0.003, amplitude: 0.08 }, SKEW_DERIV: { base: 134, slope: 0.03, amplitude: 5 },
+      PUT_CALL_SKEW_25D: { base: -4.1, slope: -0.01, amplitude: 0.35 }, ATM_IMPLIED_VOL: { base: 17, slope: 0.03, amplitude: 1.5 }, RV_IV_SPREAD: { base: 2.6, slope: 0.01, amplitude: 0.4 }, GAMMA_EXPOSURE: { base: 54, slope: 0.16, amplitude: 6 },
+      VIX_TERM_STRUCTURE: { base: 1.14, slope: 0.002, amplitude: 0.05 }, VIX_M1_M2_SPREAD: { base: -0.42, slope: 0.002, amplitude: 0.05 }, SPX_FUTURES_OI: { base: 242, slope: 1.4, amplitude: 8 }, NDX_FUTURES_OI: { base: 168, slope: 1.1, amplitude: 7 },
+      TREASURY_FUTURES_OI: { base: 208, slope: 1.0, amplitude: 9 }, NET_SPECULATIVE_POSITIONING: { base: 21, slope: 0.08, amplitude: 3 }, DEALER_GAMMA_REGIME: { base: 58, slope: 0.12, amplitude: 4 }, DEALER_VEGA_EXPOSURE: { base: 46, slope: 0.08, amplitude: 3 },
+      CDX_IG_SPREAD: { base: 71, slope: 0.05, amplitude: 4 }, CDX_HY_SPREAD: { base: 362, slope: 0.2, amplitude: 16 }, ITRAXX_EUROPE_SPREAD: { base: 78, slope: 0.05, amplitude: 5 }, CREDIT_HEDGE_DEMAND: { base: 49, slope: 0.07, amplitude: 4 },
+      CROSS_ASSET_VOL_CORRELATION: { base: 0.42, slope: 0.002, amplitude: 0.05 }, TAIL_RISK_HEDGING_INTENSITY: { base: 41, slope: 0.07, amplitude: 4 }, VOLATILITY_REGIME_SCORE: { base: 48, slope: 0.08, amplitude: 4 }, DERIVATIVE_STRESS_SCORE: { base: 44, slope: 0.09, amplitude: 5 },
+    };
+    const housingManualSeriesConfig: Record<string, { base: number; slope: number; amplitude?: number }> = {
+      CASE_SHILLER_NATIONAL: { base: 212, slope: 1.6, amplitude: 4 }, CASE_SHILLER_20CITY: { base: 224, slope: 1.7, amplitude: 4 }, FHFA_HPI: { base: 268, slope: 2.0, amplitude: 4 }, HOUSE_PRICE_INCOME_RATIO: { base: 4.9, slope: 0.03, amplitude: 0.12 },
+      HOUSE_PRICE_RENT_RATIO: { base: 1.42, slope: 0.01, amplitude: 0.03 }, REAL_HOUSE_PRICE_INDEX: { base: 148, slope: 0.8, amplitude: 2.2 }, NEW_HOME_MEDIAN_PRICE: { base: 348, slope: 1.8, amplitude: 9 }, EXISTING_HOME_MEDIAN_PRICE: { base: 296, slope: 1.6, amplitude: 8 },
+      NEW_HOME_SALES: { base: 702, slope: 0.7, amplitude: 28 }, EXISTING_HOME_SALES: { base: 5.2, slope: 0.01, amplitude: 0.18 }, MORTGAGE_APPLICATIONS: { base: 182, slope: 0.3, amplitude: 7 }, MORTGAGE_REFI_APPLICATIONS: { base: 126, slope: -0.15, amplitude: 8 },
+      PENDING_HOME_SALES: { base: 101, slope: 0.12, amplitude: 2.4 }, FIRST_TIME_BUYER_DEMAND: { base: 33, slope: 0.04, amplitude: 1.6 }, OPEN_HOUSE_TRAFFIC_INDEX: { base: 58, slope: 0.12, amplitude: 2.5 }, HOUSING_DEMAND_MOMENTUM: { base: 49, slope: 0.08, amplitude: 2.2 },
+      HOUSING_STARTS_HOUSING: { base: 1410, slope: 2.1, amplitude: 42 }, BUILDING_PERMITS_HOUSING: { base: 1490, slope: 2.0, amplitude: 39 }, HOME_COMPLETIONS: { base: 1310, slope: 1.4, amplitude: 31 }, UNSOLD_NEW_HOME_INVENTORY: { base: 286, slope: 0.7, amplitude: 9 },
+      MONTHS_SUPPLY_HOUSING: { base: 6.4, slope: 0.01, amplitude: 0.25 }, NAHB_BUILDER_SENTIMENT: { base: 48, slope: 0.1, amplitude: 3 }, CONSTRUCTION_COST_INDEX: { base: 112, slope: 0.5, amplitude: 2 }, MULTI_SINGLE_START_RATIO: { base: 0.34, slope: 0.001, amplitude: 0.02 },
+      MORTGAGE_30Y: { base: 6.35, slope: -0.01, amplitude: 0.25 }, MORTGAGE_15Y: { base: 5.64, slope: -0.01, amplitude: 0.22 }, MORTGAGE_TREASURY_SPREAD: { base: 2.48, slope: 0.004, amplitude: 0.08 }, MORTGAGE_DELINQUENCY_RATE: { base: 3.4, slope: -0.01, amplitude: 0.15 },
+      MORTGAGE_DEFAULT_RATE: { base: 0.74, slope: -0.002, amplitude: 0.05 }, CMBS_SPREADS: { base: 186, slope: 0.08, amplitude: 7 }, OFFICE_VACANCY_RATE: { base: 17.2, slope: 0.03, amplitude: 0.3 }, COMMERCIAL_RE_PRICE_INDEX: { base: 124, slope: 0.42, amplitude: 2.6 },
+    };
+    const breadthManualSeriesConfig: Record<string, { base: number; slope: number; amplitude?: number }> = {
+      AD_LINE: { base: 1000, slope: 14, amplitude: 85 }, AD_RATIO: { base: 1.02, slope: 0.002, amplitude: 0.08 }, NEW_HIGH_LOW_RATIO: { base: 1.16, slope: 0.003, amplitude: 0.09 }, ABOVE_50DMA_PCT: { base: 56, slope: 0.1, amplitude: 4 },
+      ABOVE_200DMA_PCT: { base: 48, slope: 0.1, amplitude: 3 }, MCCLELLAN_OSC: { base: 18, slope: 0.05, amplitude: 18 }, SUMMATION_INDEX: { base: 510, slope: 4.2, amplitude: 36 }, EW_CW_RATIO: { base: 0.93, slope: 0.001, amplitude: 0.03 },
+      SPX_POSITIVE_BREADTH: { base: 54, slope: 0.08, amplitude: 4 }, NASDAQ_POSITIVE_BREADTH: { base: 51, slope: 0.07, amplitude: 4 }, TOP10_INDEX_CONTRIBUTION: { base: 28, slope: 0.05, amplitude: 2 }, SECTOR_PARTICIPATION_BREADTH: { base: 6.4, slope: 0.01, amplitude: 0.3 },
+      SMALL_LARGE_PERF_RATIO: { base: 0.92, slope: 0.001, amplitude: 0.03 }, CYCLICAL_DEFENSIVE_RATIO: { base: 1.06, slope: 0.001, amplitude: 0.04 }, RSP_SPY_BREADTH: { base: 0.96, slope: 0.001, amplitude: 0.03 }, BREADTH_THRUST_SIGNAL: { base: 41, slope: 0.08, amplitude: 3 },
+      CFTC_NET_EQUITY_SPEC: { base: 23, slope: 0.08, amplitude: 4 }, CFTC_NET_BOND_SPEC: { base: -16, slope: 0.05, amplitude: 3 }, ASSET_MANAGER_NET_POSITION: { base: 51, slope: 0.08, amplitude: 3 }, LEVERAGED_FUNDS_NET_POSITION: { base: 34, slope: 0.06, amplitude: 3 },
+      HEDGE_FUND_NET_LEVERAGE: { base: 59, slope: 0.08, amplitude: 3 }, PRIME_BROKER_GROSS_EXPOSURE: { base: 68, slope: 0.09, amplitude: 3 }, PRIME_BROKER_NET_EXPOSURE: { base: 53, slope: 0.08, amplitude: 3 }, CTA_TREND_POSITIONING_SCORE: { base: 57, slope: 0.09, amplitude: 3 },
+      EQUITY_FUND_NET_FLOWS: { base: 12, slope: 0.07, amplitude: 4 }, BOND_FUND_NET_FLOWS: { base: 7, slope: 0.03, amplitude: 3 }, MONEY_MARKET_FUND_NET_FLOWS: { base: 9, slope: -0.01, amplitude: 3 }, ETF_EQUITY_FLOW_BREADTH: { base: 11, slope: 0.06, amplitude: 4 },
+      ETF_BOND_FLOW_BREADTH: { base: 6, slope: 0.03, amplitude: 3 }, AAII_BULL_BEAR_SPREAD: { base: 4, slope: 0.03, amplitude: 6 }, NAAIM_EXPOSURE_INDEX: { base: 62, slope: 0.08, amplitude: 4 }, SHORT_INTEREST_RATIO_BREADTH: { base: 2.8, slope: -0.003, amplitude: 0.08 },
+    };
+    const laborManualSeriesConfig: Record<string, { base: number; slope: number; amplitude?: number }> = {
+      PAYEMS_LABOR: { base: 146000, slope: 220, amplitude: 900 }, UNRATE_LABOR: { base: 4.4, slope: -0.006, amplitude: 0.12 }, U6_UNEMPLOYMENT_RATE: { base: 7.9, slope: -0.01, amplitude: 0.2 }, LABOR_FORCE_PARTICIPATION: { base: 62.4, slope: 0.006, amplitude: 0.08 },
+      EMPLOYMENT_POP_RATIO: { base: 60.1, slope: 0.006, amplitude: 0.08 }, INITIAL_JOBLESS_CLAIMS: { base: 246, slope: -0.12, amplitude: 8 }, CONTINUING_JOBLESS_CLAIMS: { base: 1810, slope: -0.8, amplitude: 34 }, UNEMPLOYMENT_3M_AVG_CHANGE: { base: 0.06, slope: -0.001, amplitude: 0.03 },
+      JOLTS_JOB_OPENINGS: { base: 8.4, slope: -0.01, amplitude: 0.22 }, HIRING_RATE: { base: 3.7, slope: -0.003, amplitude: 0.08 }, QUITS_RATE: { base: 2.3, slope: -0.002, amplitude: 0.05 }, LAYOFF_RATE: { base: 1.05, slope: 0.001, amplitude: 0.03 },
+      JOB_FINDING_DIFFICULTY_INDEX: { base: 46, slope: -0.04, amplitude: 2 }, SMALL_BIZ_HIRING_PLANS: { base: 17, slope: 0.03, amplitude: 1.6 }, TEMP_EMPLOYMENT_INDEX: { base: 101, slope: 0.12, amplitude: 2 }, JOB_OPENINGS_UNEMPLOYED_RATIO: { base: 1.28, slope: -0.003, amplitude: 0.04 },
+      AVG_HOURLY_EARNINGS_LABOR: { base: 31.4, slope: 0.07, amplitude: 0.12 }, AVG_WEEKLY_EARNINGS: { base: 1080, slope: 2.6, amplitude: 12 }, ATLANTA_WAGE_GROWTH_TRACKER_LABOR: { base: 5.0, slope: -0.01, amplitude: 0.12 }, EMPLOYMENT_COST_INDEX: { base: 146, slope: 0.4, amplitude: 1.6 },
+      UNIT_LABOR_COSTS_LABOR: { base: 3.2, slope: -0.006, amplitude: 0.12 }, REAL_WAGE_GROWTH: { base: 0.8, slope: 0.004, amplitude: 0.2 }, LOW_INCOME_WAGE_GROWTH: { base: 4.8, slope: 0.01, amplitude: 0.16 }, SERVICES_WAGE_PRESSURE: { base: 4.2, slope: -0.01, amplitude: 0.12 },
+      LONG_TERM_UNEMPLOYMENT_RATE: { base: 20, slope: -0.05, amplitude: 0.9 }, INVOLUNTARY_PART_TIME_RATE: { base: 2.6, slope: -0.004, amplitude: 0.08 }, CHALLENGER_JOB_CUTS: { base: 44, slope: 0.04, amplitude: 4 }, TEMP_TO_PERM_TRANSITION_RATE: { base: 56, slope: 0.05, amplitude: 2 },
+      LABOR_PRODUCTIVITY: { base: 102, slope: 0.12, amplitude: 1.4 }, LABOR_COST_PRODUCTIVITY_GAP: { base: 1.8, slope: -0.004, amplitude: 0.12 }, LABOR_TIGHTNESS_SCORE: { base: 58, slope: 0.06, amplitude: 2 }, WAGE_INFLATION_SCORE: { base: 54, slope: -0.04, amplitude: 2 },
+    };
+    const tradeManualSeriesConfig: Record<string, { base: number; slope: number; amplitude?: number }> = {
+      GLOBAL_EXPORT_GROWTH: { base: 3.6, slope: 0.01, amplitude: 0.6 }, GLOBAL_IMPORT_GROWTH: { base: 3.3, slope: 0.01, amplitude: 0.6 }, WORLD_TRADE_VOLUME_INDEX: { base: 112, slope: 0.3, amplitude: 2.2 }, US_TRADE_DEFICIT: { base: 71, slope: 0.05, amplitude: 2.4 },
+      CHINA_EXPORT_GROWTH: { base: 5.1, slope: 0.01, amplitude: 1.0 }, EU_EXPORT_GROWTH: { base: 3.2, slope: 0.01, amplitude: 0.8 }, ASIA_INTRA_TRADE_MOMENTUM: { base: 52, slope: 0.05, amplitude: 2 }, TRADE_BALANCE_DIFFUSION_SCORE: { base: 46, slope: 0.04, amplitude: 2 },
+      BDI_TRADE: { base: 1540, slope: 1.8, amplitude: 95 }, DREWRY_WCI_TRADE: { base: 2320, slope: -0.6, amplitude: 140 }, SCFI_INDEX: { base: 1120, slope: 0.8, amplitude: 70 }, HARPEX_INDEX: { base: 1720, slope: 1.0, amplitude: 85 },
+      AIR_CARGO_INDEX: { base: 109, slope: 0.2, amplitude: 4 }, PORT_CONGESTION_RATE: { base: 23, slope: -0.02, amplitude: 2 }, AVG_DELIVERY_TIME: { base: 56, slope: -0.03, amplitude: 2 }, GLOBAL_FREIGHT_STRESS_SCORE: { base: 49, slope: -0.02, amplitude: 2.5 },
+      GSCPI_TRADE: { base: 0.42, slope: -0.006, amplitude: 0.12 }, PMI_SUPPLIER_DELIVERY_TIMES: { base: 51, slope: -0.03, amplitude: 1.8 }, BACKLOG_OF_ORDERS: { base: 53, slope: -0.02, amplitude: 1.6 }, INVENTORY_SALES_RATIO_TRADE: { base: 1.34, slope: -0.002, amplitude: 0.04 },
+      RESTOCKING_VELOCITY: { base: 44, slope: 0.05, amplitude: 2 }, SUPPLIER_DELIVERY_RELIABILITY: { base: 68, slope: 0.04, amplitude: 2 }, INTERMEDIATE_GOODS_PRICE_PRESSURE: { base: 57, slope: -0.04, amplitude: 2 }, SUPPLY_CHAIN_NORMALIZATION_SCORE: { base: 52, slope: 0.06, amplitude: 2 },
+      RED_SEA_SUEZ_RISK: { base: 31, slope: 0.03, amplitude: 2.5 }, TAIWAN_STRAIT_TRADE_RISK: { base: 27, slope: 0.03, amplitude: 2.2 }, ENERGY_SHIPPING_DISRUPTION_RISK: { base: 24, slope: 0.03, amplitude: 2 }, SEMI_SUPPLY_RISK_TRADE: { base: 41, slope: -0.02, amplitude: 2 },
+      CRITICAL_MINERAL_SUPPLY_CONCENTRATION: { base: 61, slope: 0.04, amplitude: 2 }, NEW_TARIFF_ACTION_COUNT: { base: 8, slope: 0.02, amplitude: 1.2 }, SANCTIONS_TRADE_DIVERSION: { base: 36, slope: 0.03, amplitude: 2 }, TRADE_VULNERABILITY_SCORE: { base: 48, slope: 0.05, amplitude: 2.5 },
+    };
     const cryptoOnChainFallbackSeries: Record<string, readonly (readonly [string, number])[]> = {
       BTC_REALIZED_CAP: [
         ['2020-01-01', 150], ['2020-04-01', 165], ['2020-07-01', 182], ['2020-10-01', 204],
@@ -1176,6 +1253,66 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
         energyManualSeriesConfig[seriesId].base,
         energyManualSeriesConfig[seriesId].slope,
         energyManualSeriesConfig[seriesId].amplitude ?? 0,
+      ), seriesId);
+      return;
+    }
+
+    if (predictionManualSeriesConfig[seriesId]) {
+      console.log(`Fetching synthetic prediction metric ${seriesId}...`);
+      await persistFallbackSeries(buildSyntheticSeries(
+        predictionManualSeriesConfig[seriesId].base,
+        predictionManualSeriesConfig[seriesId].slope,
+        predictionManualSeriesConfig[seriesId].amplitude ?? 0,
+      ), seriesId);
+      return;
+    }
+
+    if (derivativesManualSeriesConfig[seriesId]) {
+      console.log(`Fetching synthetic derivatives metric ${seriesId}...`);
+      await persistFallbackSeries(buildSyntheticSeries(
+        derivativesManualSeriesConfig[seriesId].base,
+        derivativesManualSeriesConfig[seriesId].slope,
+        derivativesManualSeriesConfig[seriesId].amplitude ?? 0,
+      ), seriesId);
+      return;
+    }
+
+    if (housingManualSeriesConfig[seriesId]) {
+      console.log(`Fetching synthetic housing metric ${seriesId}...`);
+      await persistFallbackSeries(buildSyntheticSeries(
+        housingManualSeriesConfig[seriesId].base,
+        housingManualSeriesConfig[seriesId].slope,
+        housingManualSeriesConfig[seriesId].amplitude ?? 0,
+      ), seriesId);
+      return;
+    }
+
+    if (breadthManualSeriesConfig[seriesId]) {
+      console.log(`Fetching synthetic breadth metric ${seriesId}...`);
+      await persistFallbackSeries(buildSyntheticSeries(
+        breadthManualSeriesConfig[seriesId].base,
+        breadthManualSeriesConfig[seriesId].slope,
+        breadthManualSeriesConfig[seriesId].amplitude ?? 0,
+      ), seriesId);
+      return;
+    }
+
+    if (laborManualSeriesConfig[seriesId]) {
+      console.log(`Fetching synthetic labor metric ${seriesId}...`);
+      await persistFallbackSeries(buildSyntheticSeries(
+        laborManualSeriesConfig[seriesId].base,
+        laborManualSeriesConfig[seriesId].slope,
+        laborManualSeriesConfig[seriesId].amplitude ?? 0,
+      ), seriesId);
+      return;
+    }
+
+    if (tradeManualSeriesConfig[seriesId]) {
+      console.log(`Fetching synthetic trade metric ${seriesId}...`);
+      await persistFallbackSeries(buildSyntheticSeries(
+        tradeManualSeriesConfig[seriesId].base,
+        tradeManualSeriesConfig[seriesId].slope,
+        tradeManualSeriesConfig[seriesId].amplitude ?? 0,
       ), seriesId);
       return;
     }

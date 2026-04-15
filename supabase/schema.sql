@@ -44,7 +44,7 @@ CREATE TABLE scores (
 -- Alerts Table
 CREATE TABLE alerts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type TEXT NOT NULL CHECK (type IN ('yellow', 'red', 'category', 'cross_risk')),
+  type TEXT NOT NULL CHECK (type IN ('threshold', 'momentum', 'divergence')),
   message TEXT NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

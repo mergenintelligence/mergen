@@ -21,6 +21,17 @@
   --color-data-warning: #FBBF24;
 }
 
+@keyframes languagePopover {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 body {
   background-color: var(--color-bg-main);
   color: var(--color-text-primary);
@@ -28,6 +39,34 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 180ms ease, color 180ms ease;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a #121212;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #343434 0%, #2a2a2a 100%);
+  border: 2px solid #121212;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #4a4a4a 0%, #383838 100%);
+}
+
+*::-webkit-scrollbar-corner {
+  background: #121212;
 }
 
 .tabular-nums {
@@ -39,9 +78,51 @@ html[data-theme='graphite'] body {
   color: #e6e6e6;
 }
 
+html[data-theme='graphite'] * {
+  scrollbar-color: #4a5560 #15191d;
+}
+
+html[data-theme='graphite'] *::-webkit-scrollbar-track {
+  background: #15191d;
+}
+
+html[data-theme='graphite'] *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4c5965 0%, #39434d 100%);
+  border-color: #15191d;
+}
+
+html[data-theme='graphite'] *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #61707d 0%, #4a5560 100%);
+}
+
+html[data-theme='graphite'] *::-webkit-scrollbar-corner {
+  background: #15191d;
+}
+
 html[data-theme='light'] body {
   background-color: #f5f5f3;
   color: #141414;
+}
+
+html[data-theme='light'] * {
+  scrollbar-color: #c6c6bf #ecece7;
+}
+
+html[data-theme='light'] *::-webkit-scrollbar-track {
+  background: #ecece7;
+}
+
+html[data-theme='light'] *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cfcfc8 0%, #bdbdb5 100%);
+  border-color: #ecece7;
+}
+
+html[data-theme='light'] *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #bbbbb4 0%, #a7a79f 100%);
+}
+
+html[data-theme='light'] *::-webkit-scrollbar-corner {
+  background: #ecece7;
 }
 
 html[data-theme='graphite'] .bg-\[\#0A0A0A\] {

@@ -37,8 +37,10 @@ Bu repo icin en temiz kurulum akisi:
 - `emerging_markets_seed.sql`
 - `emerging_markets_extension_seed.sql`
 - `crypto_markets_seed.sql`
+- `prediction_markets_seed.sql`
 - `liquidity_extension_seed.sql`
 - `first_wave_extension_seed.sql`
+- `market_expansion_wave_seed.sql`
 
 4. Sonra manuel importlari yeniden kos:
 

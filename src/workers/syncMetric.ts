@@ -29,6 +29,12 @@ const SUPPORTED_DIRECT_SOURCES = new Set([
   'SOVEREIGN_MANUAL',
   'FX_MANUAL',
   'ENERGY_MANUAL',
+  'PREDICTION_MANUAL',
+  'DERIVATIVES_MANUAL',
+  'HOUSING_MANUAL',
+  'BREADTH_MANUAL',
+  'LABOR_MANUAL',
+  'TRADE_MANUAL',
 ]);
 
 export async function syncMetric(metric: SyncMetricInput) {

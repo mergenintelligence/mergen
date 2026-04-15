@@ -37,7 +37,7 @@ export interface Score {
 
 export interface Alert {
   id: string;
-  type: 'yellow' | 'red' | 'category' | 'cross_risk';
+  type: 'threshold' | 'momentum' | 'divergence';
   message: string;
   is_active: boolean;
   created_at: string;

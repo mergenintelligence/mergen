@@ -5,6 +5,8 @@ type ScoreRow = {
   date: string;
 };
 
+type AlertType = 'threshold' | 'momentum' | 'divergence';
+
 function findSevenDayReference(scores: ScoreRow[]): number | null {
   if (scores.length === 0) {
     return null;
@@ -23,10 +25,17 @@ function buildDeltaMessage(label: string, delta: number): string {
   return `${label} son 7 gunde ${Math.abs(delta).toFixed(1)} puan ${direction}.`;
 }
 
+function getMetricDirection(latest: number | null, previous: number | null) {
+  if (latest === null || previous === null) return 'flat';
+  if (latest > previous) return 'up';
+  if (latest < previous) return 'down';
+  return 'flat';
+}
+
 export async function runAlertEngine() {
   console.log('Starting Alert Engine...');
 
-  const newAlerts: { type: 'yellow' | 'red' | 'category' | 'cross_risk'; message: string }[] = [];
+  const newAlerts: { type: AlertType; message: string }[] = [];
 
   await supabase
     .from('alerts')
@@ -50,13 +59,13 @@ export async function runAlertEngine() {
 
       if (absDelta > 10) {
         newAlerts.push({
-          type: 'red',
-          message: buildDeltaMessage('Mergen Index', delta),
+          type: 'threshold',
+          message: `Esik asildi: ${buildDeltaMessage('Mergen Index', delta)}`,
         });
       } else if (absDelta > 5) {
         newAlerts.push({
-          type: 'yellow',
-          message: buildDeltaMessage('Mergen Index', delta),
+          type: 'momentum',
+          message: `Momentum bozuldu: ${buildDeltaMessage('Mergen Index', delta)}`,
         });
       }
     }
@@ -67,36 +76,104 @@ export async function runAlertEngine() {
     .select('id, name');
 
   if (!categoriesError && categories) {
-    const stressedCategories: string[] = [];
-
     for (const category of categories) {
-      const { data: latestCategoryScore } = await supabase
+      const { data: scoreHistory } = await supabase
         .from('scores')
-        .select('score')
+        .select('score, date')
         .eq('entity_type', 'category')
         .eq('entity_id', category.id)
         .order('date', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(30);
 
-      if (!latestCategoryScore) {
+      if (!scoreHistory || scoreHistory.length === 0) {
         continue;
       }
 
-      const score = Number(latestCategoryScore.score);
+      const score = Number(scoreHistory[0].score);
+      const reference = findSevenDayReference(scoreHistory as ScoreRow[]);
+      const delta = reference !== null ? score - reference : null;
+
       if (score < 25) {
-        stressedCategories.push(category.name);
         newAlerts.push({
-          type: 'category',
-          message: `${category.name} kategori skoru kritik esik altinda (${score}/100).`,
+          type: 'threshold',
+          message: `Esik asildi: ${category.name} kategori skoru kritik esik altinda (${score}/100).`,
+        });
+      } else if (score < 40) {
+        newAlerts.push({
+          type: 'threshold',
+          message: `Esik asildi: ${category.name} kategori skoru baskili bolgede (${score}/100).`,
+        });
+      }
+
+      if (delta !== null && delta <= -8) {
+        newAlerts.push({
+          type: 'momentum',
+          message: `Momentum bozuldu: ${category.name} son 7 gunde ${Math.abs(delta).toFixed(1)} puan geriledi.`,
         });
       }
     }
+  }
 
-    if (stressedCategories.length >= 2) {
+  const watchSymbols = [
+    'PM_US_RECESSION_PROB',
+    'BAMLH0A0HYM2',
+    'GLD',
+    'VIXCLS',
+    'VIX_DERIV',
+    'SPY',
+    'RSP_SPY_RATIO',
+    'AD_LINE',
+  ];
+
+  const { data: watchedMetrics } = await supabase
+    .from('metrics')
+    .select('id, symbol')
+    .in('symbol', watchSymbols);
+
+  if (watchedMetrics && watchedMetrics.length > 0) {
+    const metricIdBySymbol = new Map(watchedMetrics.map((metric) => [metric.symbol, metric.id]));
+    const metricSeries = new Map<string, Array<{ value: number; date: string }>>();
+
+    for (const symbol of watchSymbols) {
+      const metricId = metricIdBySymbol.get(symbol);
+      if (!metricId) continue;
+
+      const { data: rows } = await supabase
+        .from('metric_values')
+        .select('value, date')
+        .eq('metric_id', metricId)
+        .order('date', { ascending: false })
+        .limit(2);
+
+      metricSeries.set(
+        symbol,
+        (rows ?? []).map((row) => ({ value: Number(row.value), date: row.date })),
+      );
+    }
+
+    const direction = (symbol: string) => {
+      const rows = metricSeries.get(symbol) ?? [];
+      return getMetricDirection(rows[0]?.value ?? null, rows[1]?.value ?? null);
+    };
+
+    if (direction('PM_US_RECESSION_PROB') === 'up' && direction('BAMLH0A0HYM2') !== 'up') {
       newAlerts.push({
-        type: 'cross_risk',
-        message: `Capraz risk sinyali: ${stressedCategories.slice(0, 2).join(' ve ')} birlikte kritik bolgede.`,
+        type: 'divergence',
+        message: 'Piyasa ile veri ayrıştı: Prediction market resesyon fiyatliyor ama kredi spread acilmiyor.',
+      });
+    }
+
+    if (direction('GLD') === 'up' && direction('VIXCLS') !== 'up' && direction('VIX_DERIV') !== 'up') {
+      newAlerts.push({
+        type: 'divergence',
+        message: 'Piyasa ile veri ayrıştı: Altin yukseliyor ama VIX sakin kaliyor.',
+      });
+    }
+
+    if ((direction('RSP_SPY_RATIO') === 'down' || direction('AD_LINE') === 'down') && direction('SPY') === 'up') {
+      newAlerts.push({
+        type: 'divergence',
+        message: 'Piyasa ile veri ayrıştı: Breadth bozuluyor ama endeks yuksek kaliyor.',
       });
     }
   }

@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Layout } from './components/Layout';
-import { ArrowDown, ArrowUp, Minus, RefreshCw, Home, AlertTriangle, Activity, Layers3, ShieldAlert, Radar, Landmark, Cpu, Wheat, Gem, TrendingUp, BarChart3 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Minus, RefreshCw, Home, AlertTriangle, Activity, Layers3, ShieldAlert, Radar, Landmark, Cpu, Wheat, Gem, TrendingUp, BarChart3, Search, Star, X } from 'lucide-react';
 import { syncMetric } from './workers/syncMetric';
 import { runScoringEngine } from './workers/scoringWorker';
 import { runAlertEngine } from './workers/alertWorker';
@@ -15,8 +15,12 @@ import { useDashboardData, type DashboardData } from './hooks/useDashboardData';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import { FED_POWER_CATEGORY_ID } from './data/fedProfiles';
 import { CryptoPage } from './components/CryptoPage';
+import { PredictionMarketsPage } from './components/PredictionMarketsPage';
+import { NewsPage } from './components/NewsPage';
+import { DirectionCard, HomePage } from './components/HomePage';
 
 const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
+const PREDICTION_CATEGORY_ID = '30000000-0000-0000-0000-000000000012';
 const ALERTS_SECTION_ID = 'alerts';
 const DIVERGENCES_SECTION_ID = 'divergences';
 const SETTINGS_SECTION_ID = 'settings';
@@ -35,6 +39,12 @@ const PLACEHOLDERS: Record<string, string> = {
   '30000000-0000-0000-0000-000000000009': 'Kamu Maliyesi ve Sovereign Borç',
   '30000000-0000-0000-0000-000000000010': 'Gelişmekte Olan Piyasalar',
   '30000000-0000-0000-0000-000000000011': 'Kripto Para Piyasaları',
+  '30000000-0000-0000-0000-000000000012': 'Polymarket / Kalshi Tahmin Piyasaları',
+  '30000000-0000-0000-0000-000000000013': 'Volatilite ve Türev Piyasaları',
+  '30000000-0000-0000-0000-000000000014': 'Konut ve Gayrimenkul',
+  '30000000-0000-0000-0000-000000000015': 'Piyasa Genişliği ve Pozisyonlanma',
+  '30000000-0000-0000-0000-000000000016': 'İşgücü ve Ücret Dinamikleri',
+  '30000000-0000-0000-0000-000000000017': 'Küresel Ticaret ve Tedarik Zinciri',
 };
 const NEWS_SECTION_ID = 'news';
 const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID] as const;
@@ -48,6 +58,16 @@ type AppSettings = {
   showLegalNote: boolean;
 };
 
+type FavoriteMetric = {
+  symbol: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  latestValue: number | null;
+  latestDate: string | null;
+  trend: 'up' | 'down' | 'flat';
+};
+
 const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
   reducedMotion: false,
@@ -57,6 +77,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   showLegalNote: true,
 };
 const SYNC_CONCURRENCY = 6;
+const WATCHLIST_STORAGE_KEY = 'mergen-watchlist';
 
 type MetricGroup = {
   title: string;
@@ -134,6 +155,43 @@ const CATEGORY_GROUPS: Record<string, MetricGroup[]> = {
     { title: 'Kur ve Sermaye Baskısı', description: 'Kur ayrışması, rezerv tamponu ve sıcak para akışları.', symbols: ['DEXBZUS', 'DEXSFUS', 'CNH_CNY_SPREAD', 'FX_RESERVES_ST_DEBT_RATIO', 'IIF_NET_CAPITAL_FLOWS', 'ADXY_INDEX', 'EM_CDS_SPREAD_5Y'] },
     { title: 'Çin Kredi Motoru', description: 'Çin finansman döngüsünün EM geneline yayılan etkisi.', symbols: ['CHINA_TOTAL_SOCIAL_FINANCING', 'CHINA_CREDIT_IMPULSE'] },
     { title: 'EM Reel Aktivite', description: 'İmalat, ihracat siparişleri ve volatilite üzerinden büyüme nabzı.', symbols: ['EM_MANUFACTURING_PMI_BASKET', 'EM_EXPORT_NEW_ORDERS_INDEX', 'VXEEM_EM'] },
+  ],
+  '30000000-0000-0000-0000-000000000012': [
+    { title: 'Çekirdek Metrikler', description: 'Açık pozisyon, hacim ve likidite kalitesi üzerinden prediction market omurgası.', symbols: ['PM_TOTAL_OPEN_INTEREST', 'PM_VOLUME_24H', 'PM_VOLUME_7D', 'PM_ACTIVE_MARKET_COUNT', 'PM_MACRO_MARKET_COUNT', 'PM_AVG_BID_ASK_SPREAD', 'PM_AVG_MARKET_DEPTH'] },
+    { title: 'Konsensüs Kalitesi', description: 'Fiyatların ne kadar güçlü, dağınık veya güvenilir biçimde toplandığını gösterir.', symbols: ['PM_CONSENSUS_STRENGTH', 'PM_UNCERTAINTY_DENSITY', 'PM_MARKET_CONFIDENCE_SCORE'] },
+    { title: 'Faiz, Enflasyon ve Büyüme', description: 'Fed, enflasyon ve resesyon ekseninde makro rejim beklentileri.', symbols: ['PM_FED_CUT_PROB', 'PM_YEAR_END_FED_PATH', 'PM_US_INFLATION_UPSURPRISE_PROB', 'PM_US_RECESSION_PROB', 'PM_SOFT_LANDING_PROB'] },
+    { title: 'Risk ve Olay Fiyatlaması', description: 'Kredi, enerji, jeopolitik ve siyasi stres olasılıkları.', symbols: ['PM_CREDIT_SPREAD_WIDENING_PROB', 'PM_OIL_SHOCK_PROB', 'PM_WAR_ESCALATION_PROB', 'PM_DEBT_CEILING_CRISIS_PROB'] },
+    { title: 'Dashboard Skorları ve Sapmalar', description: 'Türetilmiş prediction market skorları ve klasik piyasalara karşı ayrışmalar.', symbols: ['PM_GENERAL_SCORE', 'PM_MACRO_RISK_SCORE', 'PM_RECESSION_PRICING_SCORE', 'PM_INFLATION_PRICING_SCORE', 'PM_VS_BONDS_DIVERGENCE', 'PM_VS_GOLD_DIVERGENCE'] },
+  ],
+  '30000000-0000-0000-0000-000000000013': [
+    { title: 'Endeks Volatilitesi', description: 'Hisse, tahvil, petrol ve altın implied volatilitesinin genel korku cephesi.', symbols: ['VIX_DERIV', 'VIX3M_DERIV', 'VVIX_DERIV', 'MOVE_DERIV', 'OVX_DERIV', 'GVZ_DERIV', 'VIX_VIX3M_RATIO', 'EQUITY_BOND_VOL_SPREAD'] },
+    { title: 'Opsiyon Akışı ve Fiyatlama', description: 'Put-call, skew ve implied vol üzerinden korunma maliyeti.', symbols: ['PUT_CALL_RATIO_DERIV', 'EQUITY_PUT_CALL_RATIO', 'INDEX_PUT_CALL_RATIO', 'SKEW_DERIV', 'PUT_CALL_SKEW_25D', 'ATM_IMPLIED_VOL', 'RV_IV_SPREAD', 'GAMMA_EXPOSURE'] },
+    { title: 'Vadeli ve Dealer Pozisyonlanma', description: 'Vadeli eğri, açık pozisyon ve dealer gamma/vega rejimi.', symbols: ['VIX_TERM_STRUCTURE', 'VIX_M1_M2_SPREAD', 'SPX_FUTURES_OI', 'NDX_FUTURES_OI', 'TREASURY_FUTURES_OI', 'NET_SPECULATIVE_POSITIONING', 'DEALER_GAMMA_REGIME', 'DEALER_VEGA_EXPOSURE'] },
+    { title: 'Kredi ve Risk Koruma', description: 'CDS, cross-asset korelasyon ve tail hedge talebinin bilesik resmi.', symbols: ['CDX_IG_SPREAD', 'CDX_HY_SPREAD', 'ITRAXX_EUROPE_SPREAD', 'CREDIT_HEDGE_DEMAND', 'CROSS_ASSET_VOL_CORRELATION', 'TAIL_RISK_HEDGING_INTENSITY', 'VOLATILITY_REGIME_SCORE', 'DERIVATIVE_STRESS_SCORE'] },
+  ],
+  '30000000-0000-0000-0000-000000000014': [
+    { title: 'Konut Fiyatları ve Değerleme', description: 'Konut piyasasinin fiyat seviyesi, reel getiri ve erisilebilirlik dengesi.', symbols: ['CASE_SHILLER_NATIONAL', 'CASE_SHILLER_20CITY', 'FHFA_HPI', 'HOUSE_PRICE_INCOME_RATIO', 'HOUSE_PRICE_RENT_RATIO', 'REAL_HOUSE_PRICE_INDEX', 'NEW_HOME_MEDIAN_PRICE', 'EXISTING_HOME_MEDIAN_PRICE'] },
+    { title: 'Talep ve Aktivite', description: 'Satis, mortgage talebi ve sahadaki alici davranisinin ritmi.', symbols: ['NEW_HOME_SALES', 'EXISTING_HOME_SALES', 'MORTGAGE_APPLICATIONS', 'MORTGAGE_REFI_APPLICATIONS', 'PENDING_HOME_SALES', 'FIRST_TIME_BUYER_DEMAND', 'OPEN_HOUSE_TRAFFIC_INDEX', 'HOUSING_DEMAND_MOMENTUM'] },
+    { title: 'Arz ve İnşaat', description: 'Insaat baslangici, builder guveni ve stok yapisi uzerinden yeni arz cephesi.', symbols: ['HOUSING_STARTS_HOUSING', 'BUILDING_PERMITS_HOUSING', 'HOME_COMPLETIONS', 'UNSOLD_NEW_HOME_INVENTORY', 'MONTHS_SUPPLY_HOUSING', 'NAHB_BUILDER_SENTIMENT', 'CONSTRUCTION_COST_INDEX', 'MULTI_SINGLE_START_RATIO'] },
+    { title: 'Finansman ve Ticari Gayrimenkul', description: 'Mortgage kosullari ve ticari gayrimenkulde kredi/fiyat baskisi.', symbols: ['MORTGAGE_30Y', 'MORTGAGE_15Y', 'MORTGAGE_TREASURY_SPREAD', 'MORTGAGE_DELINQUENCY_RATE', 'MORTGAGE_DEFAULT_RATE', 'CMBS_SPREADS', 'OFFICE_VACANCY_RATE', 'COMMERCIAL_RE_PRICE_INDEX'] },
+  ],
+  '30000000-0000-0000-0000-000000000015': [
+    { title: 'Breadth Metrikleri', description: 'Rallinin tabana yayilip yayilmadigini gosteren saf breadth gostergeleri.', symbols: ['AD_LINE', 'AD_RATIO', 'NEW_HIGH_LOW_RATIO', 'ABOVE_50DMA_PCT', 'ABOVE_200DMA_PCT', 'MCCLELLAN_OSC', 'SUMMATION_INDEX', 'EW_CW_RATIO'] },
+    { title: 'Katılım ve Liderlik', description: 'Piyasayi kac hissenin ve hangi segmentlerin tasidigini gosterir.', symbols: ['SPX_POSITIVE_BREADTH', 'NASDAQ_POSITIVE_BREADTH', 'TOP10_INDEX_CONTRIBUTION', 'SECTOR_PARTICIPATION_BREADTH', 'SMALL_LARGE_PERF_RATIO', 'CYCLICAL_DEFENSIVE_RATIO', 'RSP_SPY_BREADTH', 'BREADTH_THRUST_SIGNAL'] },
+    { title: 'Pozisyonlanma', description: 'Spekulatif, CTA ve prime broker positioning tarafinin net resmi.', symbols: ['CFTC_NET_EQUITY_SPEC', 'CFTC_NET_BOND_SPEC', 'ASSET_MANAGER_NET_POSITION', 'LEVERAGED_FUNDS_NET_POSITION', 'HEDGE_FUND_NET_LEVERAGE', 'PRIME_BROKER_GROSS_EXPOSURE', 'PRIME_BROKER_NET_EXPOSURE', 'CTA_TREND_POSITIONING_SCORE'] },
+    { title: 'Fon Akışları ve Sentiment', description: 'Fon akimlari, duyarlilik ve short interest cephesinin toplu goruntusu.', symbols: ['EQUITY_FUND_NET_FLOWS', 'BOND_FUND_NET_FLOWS', 'MONEY_MARKET_FUND_NET_FLOWS', 'ETF_EQUITY_FLOW_BREADTH', 'ETF_BOND_FLOW_BREADTH', 'AAII_BULL_BEAR_SPREAD', 'NAAIM_EXPOSURE_INDEX', 'SHORT_INTEREST_RATIO_BREADTH'] },
+  ],
+  '30000000-0000-0000-0000-000000000016': [
+    { title: 'İstihdam ve İşsizlik', description: 'Tarim disi istihdam, issizlik ve isgucune katilim cephesi.', symbols: ['PAYEMS_LABOR', 'UNRATE_LABOR', 'U6_UNEMPLOYMENT_RATE', 'LABOR_FORCE_PARTICIPATION', 'EMPLOYMENT_POP_RATIO', 'INITIAL_JOBLESS_CLAIMS', 'CONTINUING_JOBLESS_CLAIMS', 'UNEMPLOYMENT_3M_AVG_CHANGE'] },
+    { title: 'İşgücü Talebi', description: 'Acik isler, ise alim, quits ve kucuk isletme planlari uzerinden talep tarafi.', symbols: ['JOLTS_JOB_OPENINGS', 'HIRING_RATE', 'QUITS_RATE', 'LAYOFF_RATE', 'JOB_FINDING_DIFFICULTY_INDEX', 'SMALL_BIZ_HIRING_PLANS', 'TEMP_EMPLOYMENT_INDEX', 'JOB_OPENINGS_UNEMPLOYED_RATIO'] },
+    { title: 'Ücret ve Gelir Dinamikleri', description: 'Ucret buyumesi, employment cost ve reel gelir baskisi.', symbols: ['AVG_HOURLY_EARNINGS_LABOR', 'AVG_WEEKLY_EARNINGS', 'ATLANTA_WAGE_GROWTH_TRACKER_LABOR', 'EMPLOYMENT_COST_INDEX', 'UNIT_LABOR_COSTS_LABOR', 'REAL_WAGE_GROWTH', 'LOW_INCOME_WAGE_GROWTH', 'SERVICES_WAGE_PRESSURE'] },
+    { title: 'İşgücü Kalitesi ve Stres', description: 'Uzun sure issizlik, verimlilik ve emek piyasasi kirilganligi.', symbols: ['LONG_TERM_UNEMPLOYMENT_RATE', 'INVOLUNTARY_PART_TIME_RATE', 'CHALLENGER_JOB_CUTS', 'TEMP_TO_PERM_TRANSITION_RATE', 'LABOR_PRODUCTIVITY', 'LABOR_COST_PRODUCTIVITY_GAP', 'LABOR_TIGHTNESS_SCORE', 'WAGE_INFLATION_SCORE'] },
+  ],
+  '30000000-0000-0000-0000-000000000017': [
+    { title: 'Ticaret Akımları', description: 'Ihracat, ithalat ve bolgesel momentum uzerinden kuresel talep hizi.', symbols: ['GLOBAL_EXPORT_GROWTH', 'GLOBAL_IMPORT_GROWTH', 'WORLD_TRADE_VOLUME_INDEX', 'US_TRADE_DEFICIT', 'CHINA_EXPORT_GROWTH', 'EU_EXPORT_GROWTH', 'ASIA_INTRA_TRADE_MOMENTUM', 'TRADE_BALANCE_DIFFUSION_SCORE'] },
+    { title: 'Lojistik ve Taşımacılık', description: 'Navlun, konteyner, liman ve teslimat surelerinin toplu resmi.', symbols: ['BDI_TRADE', 'DREWRY_WCI_TRADE', 'SCFI_INDEX', 'HARPEX_INDEX', 'AIR_CARGO_INDEX', 'PORT_CONGESTION_RATE', 'AVG_DELIVERY_TIME', 'GLOBAL_FREIGHT_STRESS_SCORE'] },
+    { title: 'Tedarik Zinciri Sağlığı', description: 'GSCPI, backlog, envanter ve teslim guvenilirligi uzerinden saglik resmi.', symbols: ['GSCPI_TRADE', 'PMI_SUPPLIER_DELIVERY_TIMES', 'BACKLOG_OF_ORDERS', 'INVENTORY_SALES_RATIO_TRADE', 'RESTOCKING_VELOCITY', 'SUPPLIER_DELIVERY_RELIABILITY', 'INTERMEDIATE_GOODS_PRICE_PRESSURE', 'SUPPLY_CHAIN_NORMALIZATION_SCORE'] },
+    { title: 'Jeopolitik ve Stratejik Kırılganlık', description: 'Kritik deniz yolları, yariletkenler ve yaptirimlarla gelen yapisal ticaret riski.', symbols: ['RED_SEA_SUEZ_RISK', 'TAIWAN_STRAIT_TRADE_RISK', 'ENERGY_SHIPPING_DISRUPTION_RISK', 'SEMI_SUPPLY_RISK_TRADE', 'CRITICAL_MINERAL_SUPPLY_CONCENTRATION', 'NEW_TARIFF_ACTION_COUNT', 'SANCTIONS_TRADE_DIVERSION', 'TRADE_VULNERABILITY_SCORE'] },
   ],
   '10000000-0000-0000-0000-000000000001': [
     { title: 'Finansal Stres', description: 'Sistemin genel tansiyonu, volatilite ve high-yield spread baskısı.', symbols: ['STLFSI4', 'NFCI', 'BAMLH0A0HYM2', 'MOVE', 'VIXCLS'] },
@@ -290,6 +348,116 @@ function getScoreTone(score: number | null) {
   return { color: '#F87171', border: 'border-[#3F1818]', bg: 'bg-[#140B0B]' };
 }
 
+function getAlertTypeMeta(type: string) {
+  if (type === 'threshold') {
+    return {
+      label: 'Eşik Aşıldı',
+      dot: 'bg-[#F87171]',
+      pill: 'border-[#3F1818] bg-[#140B0B] text-[#F87171]',
+    };
+  }
+
+  if (type === 'momentum') {
+    return {
+      label: 'Momentum Bozuldu',
+      dot: 'bg-[#FBBF24]',
+      pill: 'border-[#3C3113] bg-[#120F0A] text-[#FBBF24]',
+    };
+  }
+
+  return {
+    label: 'Piyasa ile Veri Ayrıştı',
+    dot: 'bg-[#60A5FA]',
+    pill: 'border-[#1D2C44] bg-[#0D1420] text-[#60A5FA]',
+  };
+}
+
+function getDivergenceMeta(type?: DashboardData['divergences'][number]['signalType']) {
+  if (type === 'piyasa-veri') return { label: 'Piyasa vs Veri', pill: 'border-[#1D2C44] bg-[#0D1420] text-[#60A5FA]' };
+  if (type === 'pozisyon') return { label: 'Pozisyon Ayrışması', pill: 'border-[#3C3113] bg-[#120F0A] text-[#FBBF24]' };
+  if (type === 'rejim') return { label: 'Rejim Çatlağı', pill: 'border-[#402313] bg-[#140E0A] text-[#FB923C]' };
+  return { label: 'Çapraz Varlık', pill: 'border-[#16351F] bg-[#0D120D] text-[#4ADE80]' };
+}
+
+function getSourceQualityMeta(quality: DashboardData['pilotMetrics'][number]['sourceQuality']) {
+  if (quality === 'canli') return { label: 'Canlı', className: 'border-[#16351F] bg-[#0D120D] text-[#4ADE80]' };
+  if (quality === 'gecikmeli') return { label: 'Gecikmeli', className: 'border-[#3C3113] bg-[#120F0A] text-[#FBBF24]' };
+  if (quality === 'manuel') return { label: 'Manual', className: 'border-[#402313] bg-[#140E0A] text-[#FB923C]' };
+  return { label: 'Sentetik', className: 'border-[#1D2C44] bg-[#0D1420] text-[#60A5FA]' };
+}
+
+function formatComparisonDelta(deltaPct: number | null) {
+  if (deltaPct === null) return '—';
+  const prefix = deltaPct > 0 ? '+' : '';
+  return `${prefix}${deltaPct.toFixed(1)}%`;
+}
+
+function findMetricCategoryGroup(categoryId: string, metricSymbol: string) {
+  const groups = CATEGORY_GROUPS[categoryId] ?? [];
+  return groups.find((group) => group.symbols.includes(metricSymbol))?.title ?? null;
+}
+
+function getMetricSignalScore(metric: DashboardData['pilotMetrics'][number]) {
+  if (metric.value === null) return null;
+
+  const pct = metric.comparison1m.deltaPct ?? metric.changePct ?? 0;
+  const signed = metric.isInverse ? -pct : pct;
+  return signed;
+}
+
+function buildCategorySummaryData(
+  categoryId: string,
+  metrics: DashboardData['pilotMetrics'],
+  divergences: DashboardData['divergences'],
+  categoryTrend: 'up' | 'down' | 'flat',
+) {
+  const enriched = metrics
+    .map((metric) => ({
+      metric,
+      signal: getMetricSignalScore(metric),
+      group: findMetricCategoryGroup(categoryId, metric.symbol),
+    }))
+    .filter((item) => item.signal !== null);
+
+  const strongest = [...enriched].sort((a, b) => Number(b.signal) - Number(a.signal))[0];
+  const weakest = [...enriched].sort((a, b) => Number(a.signal) - Number(b.signal))[0];
+  const deteriorating = [...enriched]
+    .filter((item) => (item.metric.comparison1w.deltaPct ?? 0) < 0)
+    .sort((a, b) => (a.metric.comparison1w.deltaPct ?? 0) - (b.metric.comparison1w.deltaPct ?? 0))[0];
+  const divergent = divergences.find((item) => item.category.toLowerCase() === (PLACEHOLDERS[categoryId] ?? '').toLowerCase());
+
+  return [
+    {
+      key: 'strongest',
+      label: 'En güçlü sinyal',
+      title: strongest?.metric.name ?? 'Yeterli veri yok',
+      note: strongest ? `${strongest.group ?? 'Ana alan'} içinde destekleyici sinyal öne çıkıyor.` : 'Kategori yeterli veri topladıkça bu alan dolacak.',
+      tone: 'border-[#16351F] bg-[#0D120D] text-[#4ADE80]',
+    },
+    {
+      key: 'weakest',
+      label: 'En zayıf sinyal',
+      title: weakest?.metric.name ?? 'Yeterli veri yok',
+      note: weakest ? `${weakest.group ?? 'Ana alan'} içinde baskı birikiyor.` : 'Kategori yeterli veri topladıkça bu alan dolacak.',
+      tone: 'border-[#3F1818] bg-[#140B0B] text-[#F87171]',
+    },
+    {
+      key: 'deteriorating',
+      label: 'Yeni bozulan alan',
+      title: deteriorating?.group ?? 'Net bozulma yok',
+      note: deteriorating ? `${deteriorating.metric.name} son 1 haftada zayıflayan öncü sinyal.` : 'Kısa vadede belirgin yeni bozulma görünmüyor.',
+      tone: 'border-[#402313] bg-[#140E0A] text-[#FB923C]',
+    },
+    {
+      key: 'divergent',
+      label: 'Piyasa ile ayrışan metrik',
+      title: divergent?.title ?? (categoryTrend === 'flat' ? 'Belirgin ayrışma yok' : 'Henüz eşleşen ayrışma yok'),
+      note: divergent?.summary ?? 'Bu kategori için imza niteliğinde bir ayrışma henüz oluşmadı.',
+      tone: 'border-[#1D2C44] bg-[#0D1420] text-[#60A5FA]',
+    },
+  ];
+}
+
 function getGroupIcon(title: string) {
   const lower = title.toLowerCase();
   if (lower.includes('risk') || lower.includes('stres') || lower.includes('uyari')) return <ShieldAlert className="w-4 h-4" />;
@@ -386,32 +554,73 @@ function getGroupTone(title: string) {
 
 function getScoreNarrative(score: number | null, categoryName: string) {
   if (score === null) {
-    return `${categoryName} için henüz yeterli veri yok. Kategori çalıştırıldıkça bu alan daha anlamlı bir rejim okuması sunar.`;
+    return `${categoryName} için henüz yeterli veri yok. Kategori çalıştırıldıkça bu alan daha anlamlı bir rejim okuması sunar. Şimdilik bu kutu yön vermekten çok bekleme alanı gibi okunmalı. Veri kapsaması arttığında hangi alt başlıkların öne çıktığı da daha net görünür. İlk güçlü sinyal geldiğinde yorum katmanı daha anlamlı hale gelecektir.`;
   }
 
   if (score >= 75) {
-    return `${score}/100, bu kategoride koşulların genel olarak destekleyici ve sağlıklı olduğunu gösterir. Stres unsurları var olsa bile ana rejim şu an daha dengeli görünüyor.`;
+    return `${score}/100, bu kategoride koşulların genel olarak destekleyici ve sağlıklı olduğunu gösterir. Stres unsurları var olsa bile ana rejim şu an daha dengeli görünüyor. Bu tür yüksek skorlar, alt metriklerin önemli bölümünün aynı yönde pozitif katkı verdiğine işaret eder. Yine de asıl kalite, bu gücün dar birkaç metrike mi yoksa daha geniş bir zemine mi yayıldığına bakılarak anlaşılır. Eğer momentum korunursa bu alan genel endeks için destekleyici olmaya devam eder.`;
   }
 
   if (score >= 50) {
-    return `${score}/100, bu kategoride sinyallerin karışık olduğunu gösterir. Ne belirgin bir rahatlama ne de tam bir stres rejimi var; denge kıran detaylar alt metriklerde aranır.`;
+    return `${score}/100, bu kategoride sinyallerin karışık olduğunu gösterir. Ne belirgin bir rahatlama ne de tam bir stres rejimi var; denge kıran detaylar alt metriklerde aranır. Bu bant genelde güçlü ve zayıf göstergelerin aynı anda çalıştığı dönemleri anlatır. Bu yüzden tek başına skor yerine aşağıdaki katkı yapan ve baskı oluşturan alanlara birlikte bakmak daha doğru olur. Küçük bir veri değişimi bile bu kategoriyi kısa sürede yukarı ya da aşağı itebilir.`;
   }
 
   if (score >= 25) {
-    return `${score}/100, bu kategoride kırılganlığın arttığını ve savunmacı bir rejime geçildiğini anlatır. Ana tablo bozulmuş değil ama baskı birikiyor.`;
+    return `${score}/100, bu kategoride kırılganlığın arttığını ve savunmacı bir rejime geçildiğini anlatır. Ana tablo bozulmuş değil ama baskı birikiyor. Bu seviyelerde genelde birkaç metrik artık açık biçimde alarm vermeye başlar ve güçlü alanlar daralır. Eğer aşağı yönlü katkılar genişlemeye devam ederse kategori daha sert bir stres rejimine kayabilir. Bu yüzden yön değişimi için aşağıdaki zayıf alanların sakinleşip sakinleşmediği kritik önemdedir.`;
   }
 
-  return `${score}/100, bu kategoride belirgin stres ve bozulma olduğunu gösterir. Alt metrikler genelde aynı yöne bakıyor ve riskler daha toplu hissediliyor.`;
+  return `${score}/100, bu kategoride belirgin stres ve bozulma olduğunu gösterir. Alt metrikler genelde aynı yöne bakıyor ve riskler daha toplu hissediliyor. Bu tip düşük skorlar, zayıflığın artık tekil değil daha sistematik hale geldiğini düşündürür. Kısa vadeli fiyat tepkileri rahatlama yaratabilir ama temel görünümde toparlanma olmadan rejim kolay kolay düzelmez. Bu alanı okurken aşağıdaki negatif katkıların yaygınlığı ve veri kalitesi özellikle dikkatle izlenmelidir.`;
 }
 
 function getMetricMeaning(metric: DashboardData['pilotMetrics'][number]) {
+  const symbol = metric.symbol.toUpperCase();
   const base = normalizeVisibleText(metric.description?.trim() || `${metric.name}, bu kategorinin genel rejimini okumaya yardım eden bir göstergedir.`);
-  const lowText = metric.isInverse
+  const lowerName = `${metric.name} ${metric.description ?? ''}`.toLowerCase();
+
+  const explicitGuides: Record<string, { base: string; lowText: string; highText: string }> = {
+    NET_LIQUIDITY: {
+      base: 'Net Likidite, finansal sistemde riskli varlıklara akabilecek net dolar likiditesini gösterir.',
+      lowText: 'Düşük olması, piyasadaki nakit desteğinin zayıfladığını ve finansal koşulların sıkılaştığını düşündürür.',
+      highText: 'Yüksek olması, piyasalarda likidite desteğinin arttığını ve risk iştahı için daha rahat bir zemin oluştuğunu düşündürür.',
+    },
+    'BTC.D': {
+      base: 'BTC Dominans, toplam kripto piyasa değerinin ne kadarının Bitcoin’de toplandığını gösterir.',
+      lowText: 'Düşük olması, sermayenin altcoinlere daha fazla yayıldığını ve risk iştahının Bitcoin dışına taştığını düşündürür.',
+      highText: 'Yüksek olması, sermayenin daha savunmacı biçimde Bitcoin’de toplandığını ve piyasanın güvenli liman benzeri davranış gösterdiğini düşündürür.',
+    },
+  };
+
+  if (explicitGuides[symbol]) {
+    return explicitGuides[symbol];
+  }
+
+  let lowText = metric.isInverse
     ? 'Düşük kalması genelde daha dengeli ve daha az baskılı bir zemine işaret eder.'
     : 'Düşük kalması genelde zayıflama, ilginin düşmesi veya destekleyici zeminin zayıf olduğuna işaret eder.';
-  const highText = metric.isInverse
+  let highText = metric.isInverse
     ? 'Yüksek seyretmesi genelde stresin, maliyetin veya kırılganlığın arttığını düşündürür.'
     : 'Yüksek seyretmesi genelde güçlenme, yayılım veya destekleyici rejimin korunduğunu düşündürür.';
+
+  if (lowerName.includes('likidite') || lowerName.includes('liquidity')) {
+    lowText = 'Düşük olması, sistemde destekleyici likiditenin zayıfladığını ve finansal koşulların daha sıkı hale geldiğini düşündürür.';
+    highText = 'Yüksek olması, sistemde likidite desteğinin arttığını ve riskli varlıklar için daha elverişli bir zemin oluştuğunu düşündürür.';
+  } else if (lowerName.includes('dominans') || lowerName.includes('dominance')) {
+    lowText = 'Düşük olması, liderliğin daraldığını ya da sermayenin daha geniş bir alana yayıldığını düşündürür.';
+    highText = 'Yüksek olması, sermayenin belirli bir ana temada yoğunlaştığını ve liderliğin güçlendiğini düşündürür.';
+  } else if (lowerName.includes('spread') || lowerName.includes('volatil') || lowerName.includes('stress') || lowerName.includes('temerrüt') || lowerName.includes('delinquency') || lowerName.includes('default')) {
+    lowText = 'Düşük olması, baskının daha sınırlı olduğunu ve piyasanın bu risk başlığını daha sakin fiyatladığını düşündürür.';
+    highText = 'Yüksek olması, risk priminin büyüdüğünü ve bu başlıkta kırılganlık veya stres biriktiğini düşündürür.';
+  } else if (lowerName.includes('akı') || lowerName.includes('flow') || lowerName.includes('giriş') || lowerName.includes('tvl')) {
+    lowText = 'Düşük olması, ilginin ve sermaye akışının zayıfladığını düşündürür.';
+    highText = 'Yüksek olması, ilginin, katılımın veya sermaye girişinin güçlendiğini düşündürür.';
+  } else if (lowerName.includes('fiyat') || lowerName.includes('price') || lowerName.includes('endeks') || lowerName.includes('index') || lowerName.includes('satış') || lowerName.includes('sales') || lowerName.includes('büyüme') || lowerName.includes('growth')) {
+    lowText = metric.isInverse
+      ? 'Düşük olması, bu başlıktaki baskının daha hafif seyrettiğini düşündürür.'
+      : 'Düşük olması, talebin, fiyat gücünün veya büyüme ivmesinin zayıfladığını düşündürür.';
+    highText = metric.isInverse
+      ? 'Yüksek olması, bu başlıktaki baskının arttığını düşündürür.'
+      : 'Yüksek olması, talebin, fiyat gücünün veya büyüme ivmesinin destekleyici kaldığını düşündürür.';
+  }
 
   return {
     base,
@@ -509,6 +718,9 @@ async function runWithConcurrency<T>(
 export default function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [watchlist, setWatchlist] = useState<FavoriteMetric[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(() => {
     if (typeof window === 'undefined') return 'home';
     const hash = window.location.hash.replace(/^#/, '').trim();
@@ -516,7 +728,7 @@ export default function App() {
   });
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [alertSeverityFilter, setAlertSeverityFilter] = useState<'all' | 'red' | 'yellow'>('all');
+  const [alertSeverityFilter, setAlertSeverityFilter] = useState<'all' | 'threshold' | 'momentum' | 'divergence'>('all');
   const [alertCategoryFilter, setAlertCategoryFilter] = useState<string>('all');
   const { data, loading, refetch } = useDashboardData(selectedCategoryId);
   const visiblePlaceholders = Object.entries(PLACEHOLDERS).filter(
@@ -563,23 +775,38 @@ export default function App() {
       || selectedCategoryId === COOLDOWN_SECTION_ID
       ? null
       : selectedCategory?.change7d ?? null;
+  const scoredCategories = (data?.categories ?? []).filter(
+    (category) => category.score !== null && category.score !== undefined,
+  );
+  const strongestCategory = scoredCategories.length > 0
+    ? [...scoredCategories].sort((a, b) => Number(b.score) - Number(a.score))[0]
+    : null;
+  const weakestCategory = scoredCategories.length > 0
+    ? [...scoredCategories].sort((a, b) => Number(a.score) - Number(b.score))[0]
+    : null;
   const topInfoTitle = selectedCategoryId === 'home'
-    ? `Sistem Notu (${data?.alerts.length ?? 0} Aktif Uyarı)`
+    ? 'Günün Piyasa Yönü'
     : selectedCategoryId === NEWS_SECTION_ID
       ? 'Haber Notu'
       : selectedCategoryId === ALERTS_SECTION_ID
         ? 'Uyarı Merkezi'
         : selectedCategoryId === DIVERGENCES_SECTION_ID
           ? 'Sapma Notu'
-          : selectedCategoryId === SETTINGS_SECTION_ID
-            ? 'Panel Ayarları'
-            : selectedCategoryId === COOLDOWN_SECTION_ID
-              ? 'Operasyon Merkezi'
-      : 'Skor Okumasi';
+        : selectedCategoryId === SETTINGS_SECTION_ID
+          ? 'Panel Ayarları'
+          : selectedCategoryId === COOLDOWN_SECTION_ID
+            ? 'Operasyon Merkezi'
+      : `${selectedCategory?.name || topPanelLabel} Skor Değerlendirmesi`;
   const topInfoText = selectedCategoryId === 'home'
-    ? (data?.alerts.length ?? 0) > 0
-      ? `Sistemde şu anda ${data?.alerts.length ?? 0} aktif uyarı var. Ana rejimi okurken aşağıdaki uyarı ve sapma bloklarıyla birlikte değerlendirmek en doğru sonucu verir.`
-      : 'Sistemde aktif uyarı yok. Genel tabloyu yine de kategori skorlarının dağılımı ve son sapmalarla birlikte okumak gerekir.'
+    ? `${
+        (data?.totalScore ?? 0) >= 75
+          ? 'Bugün ana rejim destekleyici ve risk iştahı tabana daha dengeli yayılıyor.'
+          : (data?.totalScore ?? 0) >= 50
+            ? 'Bugün ana rejim karışık; piyasada net bir rahatlama yok ama tam stres de fiyatlanmıyor.'
+            : (data?.totalScore ?? 0) >= 25
+              ? 'Bugün zemin savunmacı; kırılganlık artıyor ve seçici alanlar öne çıkıyor.'
+              : 'Bugün ana rejim belirgin biçimde stresli; baskı birikimi birden fazla cephede hissediliyor.'
+      } ${strongestCategory ? `Görece güçlü alan ${strongestCategory.name}.` : ''} ${weakestCategory ? `En zayıf halka ise ${weakestCategory.name}.` : ''}`.trim()
     : selectedCategoryId === NEWS_SECTION_ID
       ? 'Bu alan haber akışının genel önem seviyesini ve günlük yoğunluğunu izlemek için kullanılır.'
       : selectedCategoryId === ALERTS_SECTION_ID
@@ -591,15 +818,6 @@ export default function App() {
             : selectedCategoryId === COOLDOWN_SECTION_ID
               ? 'Bu gizli ekran, sistem çalıştırma ve AI yorum yenileme işlemlerini tek yerden manuel tetiklemek için hazırlandı.'
       : getScoreNarrative(topPanelScore, topPanelLabel);
-  const scoredCategories = (data?.categories ?? []).filter(
-    (category) => category.score !== null && category.score !== undefined,
-  );
-  const strongestCategory = scoredCategories.length > 0
-    ? [...scoredCategories].sort((a, b) => Number(b.score) - Number(a.score))[0]
-    : null;
-  const weakestCategory = scoredCategories.length > 0
-    ? [...scoredCategories].sort((a, b) => Number(a.score) - Number(b.score))[0]
-    : null;
   const totalFetchedMetrics = (data?.categories ?? []).reduce((sum, category) => sum + category.fetchedCount, 0);
   const totalTrackedMetrics = (data?.categories ?? []).reduce((sum, category) => sum + category.totalCount, 0);
   const coverageRatio = totalTrackedMetrics > 0
@@ -611,9 +829,14 @@ export default function App() {
     ? Math.round((selectedFetchedMetrics / selectedCategoryMetrics.length) * 100)
     : 0;
   const selectedLastUpdate = selectedCategoryMetrics
-    .map((metric) => metric.latestDate)
+    .flatMap((metric) => [
+      metric.latestDate,
+      ...metric.history.map((point) => point.date),
+    ])
     .filter((value): value is string => Boolean(value))
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+    ?? data?.lastUpdate
+    ?? null;
   const selectedAiReliability = getAiReliability(data?.aiConfidence ?? null, selectedCoverageRatio);
   const isUtilityPage = UTILITY_SECTION_IDS.includes(selectedCategoryId as typeof UTILITY_SECTION_IDS[number]);
   const isCategoryPage = !isUtilityPage && selectedCategoryId !== 'home';
@@ -625,11 +848,43 @@ export default function App() {
   const alertCategoryOptions = Array.from(new Set(alertsWithCategory.map((alert) => alert.category as string)))
     .sort((a: string, b: string) => a.localeCompare(b, 'tr'));
   const filteredAlerts = alertsWithCategory.filter((alert) => {
-    const severityMatch = alertSeverityFilter === 'all'
-      || (alertSeverityFilter === 'red' ? alert.type === 'red' : alert.type === 'yellow');
+    const severityMatch = alertSeverityFilter === 'all' || alert.type === alertSeverityFilter;
     const categoryMatch = alertCategoryFilter === 'all' || alert.category === alertCategoryFilter;
     return severityMatch && categoryMatch;
   });
+  const categorySummaryCards = isCategoryPage
+    ? buildCategorySummaryData(selectedCategoryId, selectedCategoryMetrics, data?.divergences ?? [], selectedCategory?.trend ?? 'flat')
+    : [];
+  const searchEntries = [
+    ...(data?.categories ?? []).map((category) => ({
+      key: `cat-${category.id}`,
+      type: 'Kategori',
+      label: category.name,
+      sublabel: `${category.score ?? '--'}/100`,
+      onSelect: () => setSelectedCategoryId(category.id),
+    })),
+    ...selectedCategoryMetrics.map((metric) => ({
+      key: `metric-${metric.symbol}`,
+      type: 'Metrik',
+      label: metric.name,
+      sublabel: metric.symbol,
+      onSelect: () => setIsSearchOpen(false),
+    })),
+    ...alertsWithCategory.map((alert) => ({
+      key: `alert-${alert.id}`,
+      type: 'Uyarı',
+      label: normalizeVisibleText(alert.message),
+      sublabel: alert.category,
+      onSelect: () => setSelectedCategoryId(ALERTS_SECTION_ID),
+    })),
+    ...[...(data?.news.critical ?? []), ...(data?.news.daily ?? []), ...(data?.news.other ?? [])].map((item) => ({
+      key: `news-${item.id}`,
+      type: 'Haber',
+      label: item.title,
+      sublabel: item.publishedAt ? formatNewsTimestamp(item.publishedAt) ?? 'Haber' : 'Haber',
+      onSelect: () => setSelectedCategoryId(NEWS_SECTION_ID),
+    })),
+  ].filter((entry) => entry.label.toLowerCase().includes(searchQuery.toLowerCase().trim())).slice(0, 12);
 
   useEffect(() => {
     try {
@@ -650,11 +905,68 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(WATCHLIST_STORAGE_KEY);
+      if (!stored) return;
+      const parsed = JSON.parse(stored) as FavoriteMetric[];
+      setWatchlist(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setWatchlist([]);
+    }
+  }, []);
+
+  useEffect(() => {
     window.localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.dataset.motion = settings.reducedMotion ? 'reduced' : 'full';
     document.documentElement.dataset.density = settings.compactText ? 'compact' : 'comfortable';
   }, [settings]);
+
+  useEffect(() => {
+    window.localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlist));
+  }, [watchlist]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsSearchOpen((current) => !current);
+      }
+
+      if (event.key === 'Escape') {
+        setIsSearchOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!isSearchOpen) {
+      setSearchQuery('');
+    }
+  }, [isSearchOpen]);
+
+  useEffect(() => {
+    if (!selectedCategory || selectedCategoryMetrics.length === 0 || watchlist.length === 0) return;
+
+    setWatchlist((current) =>
+      current.map((item) => {
+        const metric = selectedCategoryMetrics.find((candidate) => candidate.symbol === item.symbol);
+        if (!metric) return item;
+
+        return {
+          ...item,
+          categoryId: selectedCategoryId,
+          categoryName: selectedCategory.name,
+          latestValue: metric.value,
+          latestDate: metric.latestDate,
+          trend: metric.trend,
+        };
+      }),
+    );
+  }, [selectedCategory, selectedCategoryId, selectedCategoryMetrics]);
 
   useEffect(() => {
     setIsGuideOpen(settings.guideDefaultOpen);
@@ -801,6 +1113,30 @@ export default function App() {
     }
   };
 
+  const toggleFavoriteMetric = (metric: DashboardData['pilotMetrics'][number]) => {
+    const categoryName = selectedCategory?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori';
+
+    setWatchlist((current) => {
+      const exists = current.some((item) => item.symbol === metric.symbol);
+      if (exists) {
+        return current.filter((item) => item.symbol !== metric.symbol);
+      }
+
+      return [
+        {
+          symbol: metric.symbol,
+          name: metric.name,
+          categoryId: selectedCategoryId,
+          categoryName,
+          latestValue: metric.value,
+          latestDate: metric.latestDate,
+          trend: metric.trend,
+        },
+        ...current,
+      ].slice(0, 12);
+    });
+  };
+
   if (loading && !data) {
     return (
       <Layout>
@@ -818,384 +1154,74 @@ export default function App() {
       alertCount={data?.alerts.length ?? 0}
       selectedCategoryId={selectedCategoryId}
       onSelectCategory={setSelectedCategoryId}
+      onOpenSearch={() => setIsSearchOpen(true)}
     >
       <div className="space-y-6">
         {/* Top Row: General Score + Categories */}
-        <div className="flex items-start gap-8">
+        <div className="flex items-stretch gap-8">
           {!UTILITY_SECTION_IDS.includes(selectedCategoryId as typeof UTILITY_SECTION_IDS[number]) && (
-            <div className="shrink-0">
-            <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-1">{topPanelLabel}</div>
-              <div className="flex items-baseline gap-2">
-                <div className="text-5xl font-mono tabular-nums leading-none">
-                  {topPanelScore !== null ? topPanelScore : '--'}
-                </div>
-              <div className="text-sm text-[#666666] font-mono">/100</div>
-            </div>
-              <div className="flex items-center gap-3 mt-2 text-xs font-mono">
-                <span className="text-[#666666]">7G değişim</span>
-                {topPanelChange7d !== null ? (
-                  <span
-                    className={`flex items-center ${
-                      topPanelTrend === 'up'
-                        ? 'text-[#4ADE80]'
-                        : topPanelTrend === 'down'
-                          ? 'text-[#F87171]'
-                          : 'text-[#666666]'
-                    }`}
-                  >
-                    {topPanelTrend === 'up' && <ArrowUp className="w-3 h-3 mr-1" />}
-                    {topPanelTrend === 'down' && <ArrowDown className="w-3 h-3 mr-1" />}
-                    {topPanelTrend === 'flat' && <Minus className="w-3 h-3 mr-1" />}
-                    {Math.abs(topPanelChange7d).toFixed(1)}
-                  </span>
-                ) : (
-                  <span className="text-[#666666] flex items-center">
-                    <Minus className="w-3 h-3 mr-1" /> veri yok
-                  </span>
-                )}
-              </div>
+            <TopScoreHero
+              label={topPanelLabel}
+              score={topPanelScore}
+              trend={topPanelTrend}
+              change7d={topPanelChange7d}
+            />
+          )}
+
+          {selectedCategoryId === 'home' && (
+            <div className="flex-1 min-w-0 flex">
+              <DirectionCard summary={topInfoText} score={topPanelScore} className="flex-1" />
             </div>
           )}
 
-          <div className="flex-1">
-            <div className="flex items-center justify-between border-b border-[#1F1F1F] pb-1 mb-2">
-              <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">
-                {topInfoTitle}
+          {selectedCategoryId !== 'home' && (
+            <div className="flex-1 min-w-0 flex">
+              <div
+                className={`relative flex-1 overflow-hidden rounded-sm border ${getScoreTone(topPanelScore).border} px-5 py-4 bg-[#111111]`}
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${getScoreTone(topPanelScore).color}16 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
+                  boxShadow: `0 0 0 1px rgba(255,255,255,0.015) inset, 0 18px 40px ${getScoreTone(topPanelScore).color}0f`,
+                }}
+              >
+                <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: getScoreTone(topPanelScore).color }} />
+                <div
+                  className="mb-2 text-[11px] font-mono uppercase tracking-[0.15em]"
+                  style={{ color: getScoreTone(topPanelScore).color }}
+                >
+                  {topInfoTitle}
+                </div>
+                <p className="max-w-4xl text-[14px] text-[#D4D4D4] leading-relaxed font-medium">
+                  {topInfoText}
+                </p>
               </div>
             </div>
-            <div className="text-sm text-[#A3A3A3] leading-relaxed max-w-3xl">
-              {topInfoText}
-            </div>
-          </div>
+          )}
         </div>
 
         {selectedCategoryId === 'home' ? (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr_1fr] gap-4">
-              <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Radar className="w-4 h-4 text-[#A3A3A3]" />
-                  <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">Piyasa Rejim Özeti</div>
-                </div>
-                <div className="text-2xl font-mono text-[#E5E5E5] tabular-nums">
-                  {data?.totalScore ?? '--'}<span className="text-sm text-[#666666] ml-1">/100</span>
-                </div>
-                <div className="mt-2 text-sm text-[#A3A3A3] leading-relaxed">
-                  Genel skor; kredi, likidite, büyüme, enflasyon ve yapısal kategorilerin ortak rejimini tek çizgide özetler.
-                </div>
-                <div className="mt-4 flex items-center gap-2 text-[10px] uppercase tracking-wider">
-                  <span
-                    className="rounded-sm px-2 py-1 font-medium"
-                    style={{ color: getScoreTone(data?.totalScore ?? null).color, border: `1px solid ${getScoreTone(data?.totalScore ?? null).color}33` }}
-                  >
-                    {getScoreWord(data?.totalScore ?? null)}
-                  </span>
-                  <span className="text-[#666666]">7G {topPanelChange7d !== null ? `${topPanelChange7d > 0 ? '+' : ''}${topPanelChange7d.toFixed(1)}` : 'veri yok'}</span>
-                </div>
-              </div>
-
-              <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="w-4 h-4 text-[#4ADE80]" />
-                  <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">En Güçlü Alan</div>
-                </div>
-                <div className="text-sm font-medium text-[#E5E5E5] leading-snug">
-                  {strongestCategory?.name ?? 'Henuz hesaplanmadi'}
-                </div>
-                <div className="mt-2 text-2xl font-mono tabular-nums text-[#4ADE80]">
-                  {strongestCategory?.score ?? '--'}
-                </div>
-                <div className="mt-2 text-xs text-[#666666] leading-relaxed">
-                  Sistem icinde su an en destekleyici rejimi veren kategori.
-                </div>
-              </div>
-
-              <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <ShieldAlert className="w-4 h-4 text-[#F87171]" />
-                  <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">En Kırılgan Alan</div>
-                </div>
-                <div className="text-sm font-medium text-[#E5E5E5] leading-snug">
-                  {weakestCategory?.name ?? 'Henuz hesaplanmadi'}
-                </div>
-                <div className="mt-2 text-2xl font-mono tabular-nums text-[#F87171]">
-                  {weakestCategory?.score ?? '--'}
-                </div>
-                <div className="mt-2 text-xs text-[#666666] leading-relaxed">
-                  Baskının en belirgin biriktiği ve dikkat isteyen kategori.
-                </div>
-              </div>
-            </div>
-
-            {/* Alerts & Divergences Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {data?.homeInsight && (
-                <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4 lg:col-span-2">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#4ADE80] animate-pulse mt-1.5 shrink-0"></div>
-                    <div className="text-sm md:text-base font-semibold text-[#E5E5E5] tracking-wide leading-snug">
-                      Piyasalar Genel Yorum
-                    </div>
-                    {data?.homeConfidence !== null && data?.homeConfidence !== undefined && (
-                      <ConfidenceBadge confidence={data.homeConfidence} />
-                    )}
-                  </div>
-                  <div className="text-sm text-[#E5E5E5] leading-relaxed">
-                    {data.homeInsight}
-                  </div>
-                  {data.homeSimpleSummary && (
-                    <div className="mt-4 pt-4 border-t border-[#1F1F1F]">
-                      <div className="text-[10px] text-[#A3A3A3] uppercase tracking-wider mb-2">
-                        Sade Özet
-                      </div>
-                      <div className="text-sm text-[#D4D4D4] leading-relaxed">
-                        {data.homeSimpleSummary}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Alerts */}
-              <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-                <div className="flex items-center gap-2 mb-4 border-b border-[#1F1F1F] pb-2">
-                  <AlertTriangle className="w-4 h-4 text-[#FBBF24]" />
-                  <span className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3]">Aktif Uyarılar</span>
-                </div>
-                {data?.alerts && data.alerts.length > 0 ? (
-                  <ul className="space-y-3">
-                    {data.alerts.map(alert => (
-                      <li key={alert.id} className="flex items-start gap-3">
-                        <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${alert.type === 'red' ? 'bg-[#F87171]' : 'bg-[#FBBF24]'}`}></div>
-                        <span className="text-sm text-[#E5E5E5]">{alert.message}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-sm text-[#666666] font-mono">Sistem normal parametrelerde çalışıyor. Aktif uyarı yok.</div>
-                )}
-              </div>
-
-              {/* Divergences */}
-              <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-                <div className="flex items-center gap-2 mb-4 border-b border-[#1F1F1F] pb-2">
-                  <Activity className="w-4 h-4 text-[#A3A3A3]" />
-                  <span className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3]">Son Sapmalar (Divergences)</span>
-                </div>
-                {data?.divergences && data.divergences.length > 0 ? (
-                  <ul className="space-y-3">
-                    {data.divergences.map((item) => (
-                      <li key={item.id} className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] p-3">
-                        <div className="flex items-start gap-3">
-                          <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.severity === 'high' ? 'bg-[#F87171]' : 'bg-[#FBBF24]'}`}></div>
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium text-[#E5E5E5]">{item.title}</span>
-                              <span className="text-[10px] uppercase tracking-wider text-[#666666]">{item.category}</span>
-                            </div>
-                            <div className="mt-1 text-sm text-[#A3A3A3] leading-relaxed">
-                              {item.summary}
-                            </div>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-sm text-[#666666] font-mono">
-                    Şu an belirgin bir sapma sinyali tespit edilmedi.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Categories Grid */}
-            <div>
-              <div className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3] mb-4">Kategori Durumları</div>
-              <div className="mb-4 rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className="w-4 h-4 text-[#A3A3A3]" />
-                  <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider">Rejim Bandı</div>
-                </div>
-                <div className="grid grid-cols-4 overflow-hidden rounded-sm border border-[#1F1F1F]">
-                  {[
-                    { label: 'Risk-On', range: '75-100', color: 'bg-[#102014] text-[#4ADE80]' },
-                    { label: 'Nötr', range: '50-74', color: 'bg-[#1A160B] text-[#FBBF24]' },
-                    { label: 'Savunmacı', range: '25-49', color: 'bg-[#1D130B] text-[#FB923C]' },
-                    { label: 'Stresli', range: '0-24', color: 'bg-[#1B0E0E] text-[#F87171]' },
-                  ].map((band) => (
-                    <div key={band.label} className={`px-3 py-3 text-center border-r last:border-r-0 border-[#1F1F1F] ${band.color}`}>
-                      <div className="text-[10px] uppercase tracking-wider font-medium">{band.label}</div>
-                      <div className="text-[10px] opacity-70 mt-1 font-mono">{band.range}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 text-xs text-[#666666] leading-relaxed">
-                  Skorlar bu banda göre okunur: yüksek skor daha destekleyici rejimi, düşük skor ise daha baskılı ve kırılgan zemini anlatır.
-                </div>
-                <div className="mt-4 flex items-center justify-between rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-3 py-2 text-[10px] uppercase tracking-wider text-[#666666]">
-                  <span>Veri kapsaması</span>
-                  <span className="font-mono text-[#A3A3A3]">{totalFetchedMetrics}/{totalTrackedMetrics} metrik • %{coverageRatio}</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {data?.categories.map(cat => (
-                  <ScoreCircle 
-                    key={cat.id} 
-                    name={cat.name} 
-                    score={cat.score} 
-                    trend={cat.trend} 
-                    onClick={() => setSelectedCategoryId(cat.id)} 
-                  />
-                ))}
-                {visiblePlaceholders.map(([id, name]) => (
-                  <ScoreCircle 
-                    key={id} 
-                    name={name} 
-                    score={null} 
-                    trend="flat" 
-                    onClick={() => setSelectedCategoryId(id)} 
-                  />
-                ))}
-              </div>
-              <div className="mt-4 bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-                <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-3">
-                  Durum Rehberi
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                  <div className="border border-[#1F1F1F] rounded-sm bg-[#0D0D0D] p-3">
-                    <div className="text-[#4ADE80] font-medium uppercase tracking-wider text-[11px] mb-1">Risk-On</div>
-                    <div className="text-[#A3A3A3]">Momentum güçlü, risk iştahı yaygın ve koşullar destekleyici.</div>
-                  </div>
-                  <div className="border border-[#1F1F1F] rounded-sm bg-[#0D0D0D] p-3">
-                    <div className="text-[#FBBF24] font-medium uppercase tracking-wider text-[11px] mb-1">Nötr</div>
-                    <div className="text-[#A3A3A3]">Karışık sinyaller var; yön net değil, denge korunuyor.</div>
-                  </div>
-                  <div className="border border-[#1F1F1F] rounded-sm bg-[#0D0D0D] p-3">
-                    <div className="text-[#FB923C] font-medium uppercase tracking-wider text-[11px] mb-1">Savunmacı</div>
-                    <div className="text-[#A3A3A3]">Kırılganlık artıyor; piyasa daha seçici ve temkinli davranıyor.</div>
-                  </div>
-                  <div className="border border-[#1F1F1F] rounded-sm bg-[#0D0D0D] p-3">
-                    <div className="text-[#F87171] font-medium uppercase tracking-wider text-[11px] mb-1">Stresli</div>
-                    <div className="text-[#A3A3A3]">Baskı yüksek; finansal veya makro stres öne çıkıyor.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
+          <HomePage
+            totalScore={data?.totalScore ?? null}
+            totalScoreChange7d={data?.totalScoreChange7d ?? null}
+            totalScoreTrend={data?.totalScoreTrend ?? 'flat'}
+            loading={loading}
+            categories={data?.categories ?? []}
+            alerts={data?.alerts ?? []}
+            divergences={data?.divergences ?? []}
+            homeInsight={data?.homeInsight ?? null}
+            homeSimpleSummary={data?.homeSimpleSummary ?? null}
+            marketDirectionSummary={topInfoText}
+            homeConfidence={data?.homeConfidence ?? null}
+            visiblePlaceholders={visiblePlaceholders}
+            onSelectCategory={setSelectedCategoryId}
+            totalFetchedMetrics={totalFetchedMetrics}
+            totalTrackedMetrics={totalTrackedMetrics}
+            showDirectionCard={false}
+          />
         ) : selectedCategoryId === NEWS_SECTION_ID ? (
-          <div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-                <div className="flex items-center gap-2 mb-4 border-b border-[#1F1F1F] pb-2">
-                  <AlertTriangle className="w-4 h-4 text-[#F87171]" />
-                  <span className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3]">Kritik Haberler</span>
-                </div>
-                {data?.news.critical && data.news.critical.length > 0 ? (
-                  <ul className="space-y-3">
-                    {data.news.critical.map((item) => (
-                      <li key={item.id} className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] p-3">
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block hover:bg-[#101010] transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="text-sm font-medium text-[#F5F5F5] leading-relaxed">
-                              {item.title}
-                            </div>
-                            {formatNewsTimestamp(item.publishedAt) && (
-                              <div className="shrink-0 text-[10px] font-mono text-[#666666] tabular-nums">
-                                {formatNewsTimestamp(item.publishedAt)}
-                              </div>
-                            )}
-                          </div>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-sm text-[#666666] font-mono">
-                    Henüz kritik haber eklenmedi.
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-                <div className="flex items-center gap-2 mb-4 border-b border-[#1F1F1F] pb-2">
-                  <Home className="w-4 h-4 text-[#A3A3A3]" />
-                  <span className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3]">Günlük Güncel Haberler</span>
-                </div>
-                {data?.news.daily && data.news.daily.length > 0 ? (
-                  <ul className="space-y-3">
-                    {data.news.daily.map((item) => (
-                      <li key={item.id} className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] p-3">
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block hover:bg-[#101010] transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="text-sm text-[#E5E5E5] leading-relaxed">
-                              {item.title}
-                            </div>
-                            {formatNewsTimestamp(item.publishedAt) && (
-                              <div className="shrink-0 text-[10px] font-mono text-[#666666] tabular-nums">
-                                {formatNewsTimestamp(item.publishedAt)}
-                              </div>
-                            )}
-                          </div>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-sm text-[#666666] font-mono">
-                    Henüz günlük haber eklenmedi.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-6 bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-              <div className="flex items-center gap-2 mb-4 border-b border-[#1F1F1F] pb-2">
-                <Activity className="w-4 h-4 text-[#A3A3A3]" />
-                <span className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3]">Ekonomi ile İlgili Diğer Haberler</span>
-              </div>
-              {data?.news.other && data.news.other.length > 0 ? (
-                <ul className="space-y-3">
-                  {data.news.other.map((item) => (
-                    <li key={item.id} className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] p-3">
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block hover:bg-[#101010] transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="text-sm text-[#E5E5E5] leading-relaxed">
-                            {item.title}
-                          </div>
-                          {formatNewsTimestamp(item.publishedAt) && (
-                            <div className="shrink-0 text-[10px] font-mono text-[#666666] tabular-nums">
-                              {formatNewsTimestamp(item.publishedAt)}
-                            </div>
-                          )}
-                        </div>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-sm text-[#666666] font-mono">
-                  Henüz ek ekonomi haberi bulunamadı.
-                </div>
-              )}
-            </div>
-          </div>
+          <NewsPage
+            news={data?.news ?? { critical: [], daily: [], other: [] }}
+            categories={data?.categories ?? []}
+          />
         ) : selectedCategoryId === ALERTS_SECTION_ID ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr_1fr] gap-4">
@@ -1208,7 +1234,7 @@ export default function App() {
                   {data?.alerts.length ?? 0}<span className="text-sm text-[#666666] ml-1">aktif</span>
                 </div>
                 <div className="mt-2 text-sm text-[#A3A3A3] leading-relaxed">
-                  Kırmızı uyarılar yüksek öncelikli, sarı uyarılar ise takip edilmesi gereken ama daha düşük yoğunluklu sinyalleri temsil eder.
+                  Uyarılar artık neden üretildiğini söyler: eşik aşıldı, momentum bozuldu veya piyasa ile veri ayrıştı.
                 </div>
               </div>
               <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
@@ -1216,8 +1242,9 @@ export default function App() {
                 <div className="flex gap-2 flex-wrap">
                   {[
                     { label: 'Tümü', value: 'all' as const },
-                    { label: 'Kırmızı', value: 'red' as const },
-                    { label: 'Sarı', value: 'yellow' as const },
+                    { label: 'Eşik', value: 'threshold' as const },
+                    { label: 'Momentum', value: 'momentum' as const },
+                    { label: 'Ayrışma', value: 'divergence' as const },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -1256,13 +1283,13 @@ export default function App() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${alert.type === 'red' ? 'bg-[#F87171]' : 'bg-[#FBBF24]'}`}></span>
+                          <span className={`h-2.5 w-2.5 rounded-full ${getAlertTypeMeta(alert.type).dot}`}></span>
                           <span className="text-sm font-medium text-[#E5E5E5]">{normalizeVisibleText(alert.message)}</span>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wider text-[#666666]">
                           <span className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1">{alert.category}</span>
-                          <span className={`rounded-sm border px-2 py-1 ${alert.type === 'red' ? 'border-[#3F1818] bg-[#140B0B] text-[#F87171]' : 'border-[#3C3113] bg-[#120F0A] text-[#FBBF24]'}`}>
-                            {alert.type === 'red' ? 'Kırmızı' : 'Sarı'}
+                          <span className={`rounded-sm border px-2 py-1 ${getAlertTypeMeta(alert.type).pill}`}>
+                            {getAlertTypeMeta(alert.type).label}
                           </span>
                         </div>
                       </div>
@@ -1284,6 +1311,20 @@ export default function App() {
             <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4 text-sm text-[#A3A3A3] leading-relaxed">
               Burada skor ile alt metriklerin ters düştüğü durumlar listelenir. Bu alan, ana tabloyu tek başına değil; alttaki çatlaklarla birlikte okumana yardım eder.
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Toplam sapma</div>
+                <div className="text-2xl font-mono text-[#E5E5E5]">{data?.divergences.length ?? 0}</div>
+              </div>
+              <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Yüksek öncelik</div>
+                <div className="text-2xl font-mono text-[#F87171]">{data?.divergences.filter((item) => item.severity === 'high').length ?? 0}</div>
+              </div>
+              <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">İmza okuma</div>
+                <div className="text-sm text-[#A3A3A3] leading-relaxed">Piyasa ve veri aynı şeyi söylemediğinde en erken çatlaklar burada görünür.</div>
+              </div>
+            </div>
             {data?.divergences && data.divergences.length > 0 ? (
               data.divergences.map((item) => (
                 <div key={item.id} className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-4">
@@ -1293,8 +1334,18 @@ export default function App() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-[#E5E5E5]">{item.title}</span>
                         <span className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1 text-[10px] uppercase tracking-wider text-[#666666]">{item.category}</span>
+                        <span className={`rounded-sm border px-2 py-1 text-[10px] uppercase tracking-wider ${getDivergenceMeta(item.signalType).pill}`}>{getDivergenceMeta(item.signalType).label}</span>
                       </div>
                       <div className="mt-2 text-sm text-[#A3A3A3] leading-relaxed">{item.summary}</div>
+                      {item.metricSymbols && item.metricSymbols.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {item.metricSymbols.map((symbol) => (
+                            <span key={symbol} className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[#666666]">
+                              {symbol}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1473,7 +1524,25 @@ export default function App() {
             guideDefaultOpen={settings.guideDefaultOpen}
             showMetricDates={settings.showMetricDates}
             showLegalNote={settings.showLegalNote}
+            watchlist={watchlist}
+            onToggleFavorite={toggleFavoriteMetric}
           />
+          )
+        ) : selectedCategoryId === PREDICTION_CATEGORY_ID ? (
+          isCategoryTransitioning ? (
+            <LoadingPanel label="Prediction market metrikleri yükleniyor..." />
+          ) : (
+            <PredictionMarketsPage
+              pilotMetrics={data?.pilotMetrics ?? []}
+              aiInsight={data?.aiInsight ?? null}
+              aiSimpleSummary={data?.aiSimpleSummary ?? null}
+              aiConfidence={data?.aiConfidence ?? null}
+              guideDefaultOpen={settings.guideDefaultOpen}
+              showMetricDates={settings.showMetricDates}
+              showLegalNote={settings.showLegalNote}
+              watchlist={watchlist}
+              onToggleFavorite={toggleFavoriteMetric}
+            />
           )
         ) : (
           <div>
@@ -1539,6 +1608,16 @@ export default function App() {
                   </div>
                 </div>
 
+                <div className="mb-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                  {categorySummaryCards.map((item) => (
+                    <div key={item.key} className={`rounded-sm border px-4 py-3 ${item.tone}`}>
+                      <div className="text-[10px] uppercase tracking-wider opacity-80 mb-2">{item.label}</div>
+                      <div className="text-sm font-medium text-[#F5F5F5] leading-snug">{item.title}</div>
+                      <div className="mt-2 text-xs text-[#A3A3A3] leading-relaxed">{item.note}</div>
+                    </div>
+                  ))}
+                </div>
+
                 {data?.pilotMetrics && data.pilotMetrics.length > 0 ? (
                   <div className="space-y-8">
                     {groupMetrics(selectedCategoryId, data.pilotMetrics).map((group) => {
@@ -1583,6 +1662,8 @@ export default function App() {
                               name={metric.name} 
                               symbol={metric.symbol}
                               source={metric.source}
+                              sourceQuality={metric.sourceQuality}
+                              description={metric.description}
                               latestDate={metric.latestDate}
                               cadence={metric.cadence}
                               value={metric.value} 
@@ -1590,8 +1671,13 @@ export default function App() {
                               change={metric.change} 
                               changePct={metric.changePct} 
                               trend={metric.trend} 
+                              comparison1w={metric.comparison1w}
+                              comparison1m={metric.comparison1m}
+                              comparison3m={metric.comparison3m}
                               history={metric.history}
                               showMetricDates={settings.showMetricDates}
+                              isFavorite={watchlist.some((item) => item.symbol === metric.symbol)}
+                              onToggleFavorite={() => toggleFavoriteMetric(metric)}
                             />
                           ))}
                         </div>
@@ -1618,7 +1704,7 @@ export default function App() {
                             <span>Metrik Rehberi</span>
                           </div>
                           <div className="text-[11px] text-[#666666] mt-2 leading-relaxed">
-                            Bu bölüm, her metriğin neyi anlattığını ve yüksek ya da düşük okunmasının genel olarak hangi rejime işaret ettiğini hızlı okumak için hazırlandı.
+                            Bu bölüm, her metriğin kısa anlamını ve düşük ya da yüksek kaldığında nasıl okunması gerektiğini hızlıca görmek için hazırlandı.
                           </div>
                         </div>
                         <div className="shrink-0 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-3 py-2 text-[10px] uppercase tracking-wider text-[#A3A3A3]">
@@ -1648,6 +1734,7 @@ export default function App() {
                                   {metric.cadence === 'annual' ? 'yapısal' : 'aktif'}
                                 </div>
                               </div>
+                              <div className="mt-3 mb-1 text-[10px] uppercase tracking-wider text-[#666666]">Bu metrik neyi anlatır?</div>
                               <div className="text-[12px] text-[#A3A3A3] leading-relaxed">
                                 {meaning.base}
                               </div>
@@ -1719,6 +1806,60 @@ export default function App() {
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {isSearchOpen && (
+          <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/55 px-4 pt-24 backdrop-blur-[2px]">
+            <div className="w-full max-w-2xl rounded-sm border border-[#1F1F1F] bg-[#111111] shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+              <div className="flex items-center gap-3 border-b border-[#1F1F1F] px-4 py-3">
+                <Search className="h-4 w-4 text-[#666666]" />
+                <input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Kategori, metrik, uyarı veya haber ara..."
+                  className="flex-1 bg-transparent text-sm text-[#E5E5E5] outline-none placeholder:text-[#666666]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsSearchOpen(false)}
+                  className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] p-1 text-[#666666] hover:text-[#E5E5E5]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="max-h-[420px] overflow-y-auto p-2">
+                {searchEntries.length > 0 ? (
+                  <div className="space-y-1">
+                    {searchEntries.map((entry) => (
+                      <button
+                        key={entry.key}
+                        type="button"
+                        onClick={() => {
+                          entry.onSelect();
+                          setIsSearchOpen(false);
+                          setSearchQuery('');
+                        }}
+                        className="flex w-full items-start justify-between gap-4 rounded-sm px-3 py-2 text-left hover:bg-[#141414] transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-0.5 text-[9px] uppercase tracking-wider text-[#666666]">{entry.type}</span>
+                            <span className="text-sm text-[#E5E5E5]">{entry.label}</span>
+                          </div>
+                          <div className="mt-1 text-xs text-[#666666]">{entry.sublabel}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-3 py-10 text-center text-sm text-[#666666] font-mono">
+                    Sonuç bulunamadı.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1800,40 +1941,125 @@ function LoadingPanel({ label }: { label: string }) {
 }
 
 function ScoreCircle({ score, name, trend, onClick }: { key?: React.Key; score: number | null, name: string, trend: string, onClick: () => void }) {
-  const radius = 36;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = score !== null ? circumference - (score / 100) * circumference : circumference;
   const tone = getScoreTone(score);
   const color = tone.color;
   const scoreWord = getScoreWord(score);
 
   return (
-    <div onClick={onClick} className={`relative flex flex-col items-center p-4 border rounded-sm cursor-pointer transition-colors group hover:bg-[#141414] ${tone.bg} ${tone.border}`}>
-      <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-sm" style={{ backgroundColor: color }}></div>
-      <div className="relative flex items-center justify-center w-24 h-24 mb-3">
-        <svg className="transform -rotate-90 w-24 h-24">
-          <circle cx="48" cy="48" r={radius} stroke="#1F1F1F" strokeWidth="6" fill="none" />
-          {score !== null && (
-            <circle 
-              cx="48" cy="48" r={radius} 
-              stroke={color} 
-              strokeWidth="6" 
-              fill="none" 
-              strokeDasharray={circumference} 
-              strokeDashoffset={strokeDashoffset} 
-              className="transition-all duration-1000 ease-out" 
-            />
-          )}
-        </svg>
-        <div className="absolute flex flex-col items-center justify-center">
-          <span className="text-xl font-mono font-bold" style={{ color }}>{score !== null ? score : '--'}</span>
+    <div
+      onClick={onClick}
+      className="relative bg-[#111111] border border-[#1F1F1F] rounded-sm p-4 cursor-pointer hover:bg-[#141414] transition-colors group overflow-hidden"
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-sm" style={{ backgroundColor: color }} />
+      {/* Category name */}
+      <div className="mb-4 min-h-[2.4rem]">
+        <div className="inline-flex max-w-full rounded-sm border border-[#1F1F1F] bg-[#0A0A0A] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+          <div className="text-[12px] font-medium text-[#F5F5F5] leading-snug tracking-[0.01em]">
+            {name}
+          </div>
         </div>
       </div>
-      <div className="text-xs text-center font-medium text-[#A3A3A3] group-hover:text-[#E5E5E5] transition-colors h-8 flex items-center justify-center">
-        {name}
+      {/* Score number */}
+      <div className="flex items-baseline gap-1 mb-1">
+        <span className="text-[2.2rem] leading-none font-mono font-bold tabular-nums" style={{ color }}>
+          {score !== null ? score : '--'}
+        </span>
+        {score !== null && <span className="text-[11px] text-[#3A3A3A] font-mono">/100</span>}
       </div>
-      <div className="mt-2 text-[10px] uppercase tracking-wider font-medium" style={{ color }}>
-        {scoreWord}
+      {/* Progress bar */}
+      <div className="h-[3px] bg-[#1A1A1A] rounded-full mt-2 mb-3">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: score !== null ? `${score}%` : '0%', backgroundColor: color, opacity: 0.75 }}
+        />
+      </div>
+      {/* Footer: score word + trend */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>
+          {scoreWord}
+        </span>
+        <span
+          className="text-[11px] font-mono"
+          style={{ color: trend === 'up' ? '#4ADE80' : trend === 'down' ? '#F87171' : '#444444' }}
+        >
+          {trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function TopScoreHero({
+  label,
+  score,
+  trend,
+  change7d,
+}: {
+  label: string;
+  score: number | null;
+  trend: 'up' | 'down' | 'flat';
+  change7d: number | null;
+}) {
+  const tone = getScoreTone(score);
+  const scoreWord = getScoreWord(score);
+  const trendColor = trend === 'up' ? '#4ADE80' : trend === 'down' ? '#F87171' : '#A3A3A3';
+  const isPositive = change7d !== null && change7d > 0;
+  const isNegative = change7d !== null && change7d < 0;
+
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-sm border ${tone.border} px-5 py-4 min-w-[250px] bg-[#111111]`}
+      style={{
+        backgroundImage: `linear-gradient(135deg, ${tone.color}18 0%, transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
+        boxShadow: `0 0 0 1px rgba(255,255,255,0.015) inset, 0 18px 40px ${tone.color}0f`,
+      }}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: tone.color }} />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[10px] text-[#A3A3A3] uppercase tracking-[0.16em] mb-2">{label}</div>
+          <div className="flex items-end gap-2">
+            <div className="text-[3.25rem] font-mono tabular-nums leading-none text-[#F5F5F5]">
+              {score !== null ? score : '--'}
+            </div>
+            <div className="text-sm text-[#666666] font-mono mb-1.5">/100</div>
+          </div>
+        </div>
+        <div
+          className="rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
+          style={{
+            color: tone.color,
+            borderColor: `${tone.color}44`,
+            backgroundColor: `${tone.color}12`,
+          }}
+        >
+          {scoreWord}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <div className="h-1.5 overflow-hidden rounded-full bg-[#1A1A1A]">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: score !== null ? `${score}%` : '0%', background: `linear-gradient(90deg, ${tone.color}CC 0%, ${tone.color} 100%)` }}
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-sm border border-[#1F1F1F] bg-[#0D0D0D]/90 px-3 py-2">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-[#666666]">7G değişim</span>
+          {change7d !== null ? (
+            <span className="flex items-center gap-1.5 text-xs font-mono tabular-nums" style={{ color: trendColor }}>
+              {isPositive && <ArrowUp className="w-3 h-3" />}
+              {isNegative && <ArrowDown className="w-3 h-3" />}
+              {!isPositive && !isNegative && <Minus className="w-3 h-3" />}
+              {change7d > 0 ? '+' : ''}{change7d.toFixed(1)}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs font-mono text-[#666666]">
+              <Minus className="w-3 h-3" />
+              veri yok
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1844,6 +2070,8 @@ interface MetricCardProps {
   name: string;
   symbol: string;
   source: string;
+  sourceQuality: DashboardData['pilotMetrics'][number]['sourceQuality'];
+  description?: string | null;
   latestDate: string | null;
   cadence: 'daily' | 'annual';
   value: number | null;
@@ -1851,11 +2079,71 @@ interface MetricCardProps {
   change: number | null;
   changePct: number | null;
   trend: 'up' | 'down' | 'flat';
+  comparison1w: DashboardData['pilotMetrics'][number]['comparison1w'];
+  comparison1m: DashboardData['pilotMetrics'][number]['comparison1m'];
+  comparison3m: DashboardData['pilotMetrics'][number]['comparison3m'];
   history?: { date: string; value: number }[];
   showMetricDates?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
-function MetricCard({ name, symbol, source, latestDate, cadence, value, unit, change, changePct, trend, history, showMetricDates = true }: MetricCardProps) {
+function getMetricValueMeta(name: string, symbol: string, source: string) {
+  const upperSymbol = symbol.toUpperCase();
+  const normalizedName = name.toLowerCase();
+
+  if (upperSymbol.startsWith('WID_')) {
+    return { hint: 'pay oranı', inlineUnit: '%', digits: 1, label: 'Oran', barMax: 100 };
+  }
+
+  if (source === 'VDEM') {
+    return { hint: 'endeks skoru', inlineUnit: '', digits: 3, label: 'Endeks', barMax: null };
+  }
+
+  if (upperSymbol.includes('_PROB') || normalizedName.includes('olasılığı')) {
+    return { hint: 'olasılık', inlineUnit: '%', digits: 1, label: 'Olasılık', barMax: 100 };
+  }
+
+  if (upperSymbol.includes('_SCORE') || normalizedName.includes('skoru')) {
+    return { hint: 'skor', inlineUnit: '/100', digits: 1, label: 'Skor', barMax: 100 };
+  }
+
+  if (upperSymbol.includes('OPEN_INTEREST')) {
+    return { hint: 'OI endeksi', inlineUnit: '', digits: 2, label: 'Açık Pozisyon', barMax: null };
+  }
+
+  if (upperSymbol.includes('VOLUME')) {
+    return { hint: 'hacim endeksi', inlineUnit: '', digits: 2, label: 'Hacim', barMax: null };
+  }
+
+  if (upperSymbol.includes('MARKET_COUNT') || normalizedName.includes('sayısı')) {
+    return { hint: 'yaklaşık adet', inlineUnit: '', digits: 0, label: 'Adet', barMax: null };
+  }
+
+  if (upperSymbol.includes('DEPTH')) {
+    return { hint: 'derinlik endeksi', inlineUnit: '', digits: 1, label: 'Likidite Derinliği', barMax: 100 };
+  }
+
+  if (upperSymbol.includes('SPREAD')) {
+    return { hint: 'spread ölçümü', inlineUnit: '', digits: 2, label: 'Spread', barMax: null };
+  }
+
+  if (upperSymbol.includes('DIVERGENCE')) {
+    return { hint: 'sapma skoru', inlineUnit: '', digits: 1, label: 'Sapma', barMax: 100 };
+  }
+
+  if (normalizedName.includes('hacim')) {
+    return { hint: 'hacim göstergesi', inlineUnit: '', digits: 2, label: 'Hacim', barMax: null };
+  }
+
+  if (normalizedName.includes('derinliği')) {
+    return { hint: 'likidite derinliği', inlineUnit: '', digits: 1, label: 'Likidite Derinliği', barMax: 100 };
+  }
+
+  return { hint: 'güncel seviye', inlineUnit: '', digits: 2, label: 'Seviye', barMax: null };
+}
+
+function MetricCard({ name, symbol, source, sourceQuality, description, latestDate, cadence, value, unit, change, changePct, trend, comparison1w, comparison1m, comparison3m, history, showMetricDates = true, isFavorite = false, onToggleFavorite }: MetricCardProps) {
   const isChangePositive = change !== null && change > 0;
   const isChangeNegative = change !== null && change < 0;
   const changeColor = isChangePositive ? 'text-[#4ADE80]' : isChangeNegative ? 'text-[#F87171]' : 'text-[#666666]';
@@ -1863,24 +2151,55 @@ function MetricCard({ name, symbol, source, latestDate, cadence, value, unit, ch
   const isAnnual = cadence === 'annual';
   const trendAccent = isChangePositive ? '#4ADE80' : isChangeNegative ? '#F87171' : '#666666';
   const cadenceLabel = isAnnual ? 'yapisal' : 'aktif';
+  const sourceLabel =
+    source === 'FRED_COMPOSITE'
+      ? 'FRED_C'
+      : source === 'GLOBAL_RISK_MANUAL'
+        ? 'GR_MAN'
+        : source === 'REAL_ECON_MANUAL'
+          ? 'RE_MAN'
+          : source === 'CREDIT_MANUAL'
+            ? 'CR_MAN'
+            : source === 'PREDICTION_MANUAL'
+              ? 'PM_MAN'
+              : source === 'DERIVATIVES_MANUAL'
+                ? 'DV_MAN'
+                : source === 'HOUSING_MANUAL'
+                  ? 'HS_MAN'
+                  : source === 'BREADTH_MANUAL'
+                    ? 'BR_MAN'
+                    : source === 'LABOR_MANUAL'
+                      ? 'LB_MAN'
+                      : source === 'TRADE_MANUAL'
+                        ? 'TD_MAN'
+              : source;
+  const valueMeta = getMetricValueMeta(name, symbol, source);
+  const normalizedBarValue = value !== null && valueMeta.barMax
+    ? Math.max(0, Math.min(100, (value / valueMeta.barMax) * 100))
+    : null;
+  const sourceQualityMeta = getSourceQualityMeta(sourceQuality);
+  const formatGroupedNumber = (val: number, digits: number) =>
+    new Intl.NumberFormat('tr-TR', {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(val);
 
   const formatValue = (val: number | null) => {
     if (val === null) return '--';
-    if (symbol.startsWith('WID_')) return `${(val * 100).toFixed(1)}`;
-    if (source === 'VDEM') return val.toFixed(3);
-    return val.toFixed(2);
+    if (symbol.startsWith('WID_')) return formatGroupedNumber(val * 100, valueMeta.digits);
+    return formatGroupedNumber(val, valueMeta.digits);
   };
   const formatChange = (val: number | null) => {
     if (val === null) return '--';
     const prefix = val > 0 ? '+' : '';
-    if (symbol.startsWith('WID_')) return `${prefix}${(val * 100).toFixed(1)} pp`;
-    if (source === 'VDEM') return `${prefix}${val.toFixed(3)}`;
-    return `${prefix}${val.toFixed(2)}`;
+    if (symbol.startsWith('WID_')) return `${prefix}${formatGroupedNumber(Math.abs(val * 100), 1)} pp`;
+    if (source === 'VDEM') return `${prefix}${formatGroupedNumber(Math.abs(val), 3)}`;
+    return `${prefix}${formatGroupedNumber(Math.abs(val), 2)}`;
   };
   const formatChangePct = (val: number | null) => {
     if (val === null) return '--';
     const prefix = val > 0 ? '+' : '';
-    return `${prefix}${val.toFixed(2)}%`;
+    return `${prefix}${formatGroupedNumber(Math.abs(val), 2)}%`;
   };
   const latestLabel = latestDate
     ? (isAnnual ? new Date(latestDate).getFullYear().toString() : latestDate)
@@ -1889,77 +2208,105 @@ function MetricCard({ name, symbol, source, latestDate, cadence, value, unit, ch
   const emptyChartLabel = isAnnual ? 'Yillik seri bekleniyor' : 'Yeterli veri yok';
 
   return (
-    <div className="relative bg-[#111111] border border-[#1F1F1F] p-4 rounded-sm hover:bg-[#141414] transition-colors group flex flex-col justify-between overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: trendAccent }}></div>
-      <div>
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="min-w-0 flex-1">
-            <div className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-3 py-2.5">
-              <div className="text-[13px] leading-snug text-[#E5E5E5] break-words">
-                {name}
-              </div>
+    <div className="relative bg-[#111111] border border-[#1F1F1F] p-4 rounded-sm hover:bg-[#141414] transition-colors group flex flex-col gap-3 overflow-hidden">
+      {/* Üst renk çizgisi */}
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: trendAccent }} />
+
+      {/* Başlık satırı: isim + değişim pill */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] leading-snug text-[#D4D4D4] font-medium break-words">{name}</div>
+          <div className="mt-1.5 flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <span className="text-[9px] font-mono text-[#444] border border-[#1F1F1F] px-1.5 py-0.5 rounded-[2px] bg-[#0D0D0D] shrink min-w-0 truncate">{symbol}</span>
+              <span className={`text-[9px] tracking-wide border px-1.5 py-0.5 rounded-[2px] shrink-0 font-medium ${sourceQualityMeta.className}`}>{sourceQualityMeta.label}</span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1 text-[10px] font-mono text-[#A3A3A3]">
-                {symbol}
-              </span>
-              <span className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1 text-[10px] uppercase tracking-wider text-[#666666]">
-                {cadenceLabel}
-              </span>
-            </div>
+            <span className="text-[9px] uppercase tracking-wider text-[#3A3A3A]">{sourceLabel} · {cadenceLabel}</span>
           </div>
-          <div className={`flex items-center gap-1 text-xs font-mono tabular-nums ${changeColor}`}>
+        </div>
+        <div className="flex items-start gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            className={`rounded-sm border p-1 transition-colors ${isFavorite ? 'border-[#4B3A12] bg-[#1A160B] text-[#FBBF24]' : 'border-[#1F1F1F] bg-[#0D0D0D] text-[#666666] hover:text-[#FBBF24]'}`}
+          >
+            <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-[#FBBF24]' : ''}`} />
+          </button>
+          <div
+            className={`flex items-center gap-0.5 text-[11px] font-mono px-1.5 py-0.5 rounded-sm shrink-0 tabular-nums ${changeColor}`}
+            style={{ backgroundColor: `${strokeColor}14` }}
+          >
             {isChangePositive && <ArrowUp className="w-3 h-3" />}
             {isChangeNegative && <ArrowDown className="w-3 h-3" />}
-            {(!isChangePositive && !isChangeNegative) && <Minus className="w-3 h-3" />}
+            {!isChangePositive && !isChangeNegative && <Minus className="w-3 h-3" />}
             {formatChange(change)}
           </div>
         </div>
-        <div className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] p-3">
-          <div className="flex items-baseline justify-between gap-3">
-            <div className="flex items-baseline gap-1 min-w-0">
-              <span className="text-2xl font-mono tabular-nums">{formatValue(value)}</span>
-              {unit && value !== null && <span className="text-xs text-[#666666] font-mono">{unit}</span>}
-              {!unit && symbol.startsWith('WID_') && value !== null && <span className="text-xs text-[#666666] font-mono">%</span>}
-            </div>
-            <div className="text-[10px] uppercase tracking-wider text-[#666666] shrink-0">
-              {source}
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-mono text-[#666666]">
-            <div className="rounded-sm border border-[#1F1F1F] px-2 py-2">
-              <div className="uppercase tracking-wider mb-1">{periodLabel}</div>
-              <div className="tabular-nums text-[#A3A3A3]">{formatChangePct(changePct)}</div>
-            </div>
-            <div className="rounded-sm border border-[#1F1F1F] px-2 py-2">
-              <div className="uppercase tracking-wider mb-1">{showMetricDates ? 'Son veri' : 'Durum'}</div>
-              <div className="tabular-nums text-[#A3A3A3]">{showMetricDates ? latestLabel : 'Gizli'}</div>
-            </div>
-          </div>
-        </div>
       </div>
-      
-      {/* Sparkline Chart */}
-      <div className="h-12 mt-4 w-full rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1 opacity-70 group-hover:opacity-100 transition-opacity">
+
+      {/* Ana değer */}
+      <div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[26px] leading-none font-mono tabular-nums text-[#E5E5E5] font-semibold">
+            {formatValue(value)}
+          </span>
+          {value !== null && (unit || valueMeta.inlineUnit) && (
+            <span className="text-xs text-[#555] font-mono">{unit || valueMeta.inlineUnit}</span>
+          )}
+        </div>
+        <div className="text-[10px] text-[#484848] mt-2 uppercase tracking-wider">{valueMeta.hint}</div>
+      </div>
+
+      {/* Progress bar */}
+      {normalizedBarValue !== null && (
+        <div className="h-[3px] rounded-full bg-[#1A1A1A] overflow-hidden">
+          <div
+            className="h-full rounded-full transition-[width] duration-500"
+            style={{ width: `${normalizedBarValue}%`, background: `linear-gradient(90deg, ${trendAccent}55, ${trendAccent})` }}
+          />
+        </div>
+      )}
+
+      {/* Açıklama */}
+      {description && (
+        <div className="text-[11px] text-[#606060] leading-relaxed">{description}</div>
+      )}
+
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: '1Hf', value: comparison1w.deltaPct, trend: comparison1w.trend },
+          { label: '1Ay', value: comparison1m.deltaPct, trend: comparison1m.trend },
+          { label: '3Ay', value: comparison3m.deltaPct, trend: comparison3m.trend },
+        ].map((item) => (
+          <div key={item.label} className="rounded-sm border border-[#252525] bg-[#0D0D0D] px-2 py-2">
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[#505050]">{item.label}</div>
+            <div className={`mt-1 text-[11px] font-mono font-semibold tabular-nums ${
+              item.trend === 'up' ? 'text-[#4ADE80]' : item.trend === 'down' ? 'text-[#F87171]' : 'text-[#555555]'
+            }`}>
+              {formatComparisonDelta(item.value)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sparkline */}
+      <div className="h-10 -mx-1 mt-auto opacity-50 group-hover:opacity-90 transition-opacity">
         {history && history.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={history}>
               <YAxis domain={['dataMin', 'dataMax']} hide />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke={strokeColor} 
-                strokeWidth={1.5} 
-                dot={false} 
-                isAnimationActive={false}
-              />
+              <Line type="monotone" dataKey="value" stroke={strokeColor} strokeWidth={1.5} dot={false} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[9px] text-[#333333] font-mono">
-            {emptyChartLabel}
-          </div>
+          <div className="w-full h-full flex items-center justify-center text-[9px] text-[#282828] font-mono">{emptyChartLabel}</div>
         )}
+      </div>
+
+      {/* Alt satır: değişim % + tarih */}
+      <div className="flex items-center justify-between pt-2 border-t border-[#191919] text-[10px] font-mono">
+        <span className={changePct !== null ? changeColor : 'text-[#444]'}>{formatChangePct(changePct)}</span>
+        <span className="text-[#3A3A3A]">{showMetricDates ? latestLabel : '—'}</span>
       </div>
     </div>
   );

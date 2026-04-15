@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUp, ArrowDown, Minus, Layers3 } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, Layers3, Star } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 import type { DashboardData } from '../hooks/useDashboardData';
 
@@ -85,14 +85,33 @@ interface CryptoPageProps {
   guideDefaultOpen: boolean;
   showMetricDates: boolean;
   showLegalNote: boolean;
+  watchlist: { symbol: string }[];
+  onToggleFavorite: (metric: DashboardData['pilotMetrics'][number]) => void;
 }
 
 function getMetricMeaning(metric: DashboardData['pilotMetrics'][number]) {
+  const symbol = metric.symbol.toUpperCase();
   const base = metric.description?.trim() || `${metric.name}, kripto rejimini okumaya yardım eden yardımcı bir göstergedir.`;
   const isInverse = metric.symbol === 'USDT.D'
     || metric.symbol === 'OPEN_INTEREST'
     || metric.symbol === 'FUNDING_RATES'
     || metric.symbol === 'LIQUIDATION_HEATMAP';
+
+  if (symbol === 'BTC.D') {
+    return {
+      base: 'BTC Dominansı, toplam kripto piyasa değerinin ne kadarının Bitcoin’de toplandığını gösterir.',
+      lowText: 'Düşük olması, sermayenin altcoinlere daha fazla yayıldığını ve risk iştahının Bitcoin dışına taştığını düşündürür.',
+      highText: 'Yüksek olması, sermayenin daha savunmacı biçimde Bitcoin’de yoğunlaştığını ve piyasanın kalite/güvenlik aradığını düşündürür.',
+    };
+  }
+
+  if (symbol === 'USDT.D') {
+    return {
+      base: 'USDT Dominansı, stablecoin ağırlığının toplam kripto piyasa içindeki payını gösterir.',
+      lowText: 'Düşük olması, sermayenin stablecoin park alanından riskli varlıklara daha çok geçtiğini düşündürür.',
+      highText: 'Yüksek olması, yatırımcıların savunmada kaldığını ve nakde yakın pozisyon taşımayı tercih ettiğini düşündürür.',
+    };
+  }
 
   return {
     base,
@@ -225,7 +244,7 @@ function FearGreedGauge({
 
 // ─── Price card ───────────────────────────────────────────────────────────────
 
-function PriceCard({ metric, showMetricDates }: { metric: DashboardData['pilotMetrics'][0]; showMetricDates: boolean }) {
+function PriceCard({ metric, showMetricDates, isFavorite, onToggleFavorite }: { metric: DashboardData['pilotMetrics'][0]; showMetricDates: boolean; isFavorite: boolean; onToggleFavorite: () => void }) {
   const meta = COIN_META[metric.symbol];
   if (!meta) return null;
   const tc = trendColor(metric.trend);
@@ -248,17 +267,26 @@ function PriceCard({ metric, showMetricDates }: { metric: DashboardData['pilotMe
             <div className="text-[10px] text-[#666666] mt-0.5">{meta.label}</div>
           </div>
         </div>
-        {metric.changePct !== null && (
-          <div
-            className="flex items-center gap-0.5 text-xs font-mono px-1.5 py-0.5 rounded-sm"
-            style={{ color: tc, backgroundColor: `${tc}18` }}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            className={`rounded-sm border p-1 transition-colors ${isFavorite ? 'border-[#4B3A12] bg-[#1A160B] text-[#FBBF24]' : 'border-[#1F1F1F] bg-[#0D0D0D] text-[#666666] hover:text-[#FBBF24]'}`}
           >
-            {metric.trend === 'up' && <ArrowUp className="w-3 h-3" />}
-            {metric.trend === 'down' && <ArrowDown className="w-3 h-3" />}
-            {metric.trend === 'flat' && <Minus className="w-3 h-3" />}
-            {Math.abs(metric.changePct).toFixed(2)}%
-          </div>
-        )}
+            <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-[#FBBF24]' : ''}`} />
+          </button>
+          {metric.changePct !== null && (
+            <div
+              className="flex items-center gap-0.5 text-xs font-mono px-1.5 py-0.5 rounded-sm"
+              style={{ color: tc, backgroundColor: `${tc}18` }}
+            >
+              {metric.trend === 'up' && <ArrowUp className="w-3 h-3" />}
+              {metric.trend === 'down' && <ArrowDown className="w-3 h-3" />}
+              {metric.trend === 'flat' && <Minus className="w-3 h-3" />}
+              {Math.abs(metric.changePct).toFixed(2)}%
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Price */}
@@ -325,18 +353,22 @@ function SignalCard({
   description,
   metric,
   showMetricDates,
+  isFavorite,
+  onToggleFavorite,
 }: {
   title: string;
   description: string;
   metric?: DashboardData['pilotMetrics'][0];
   showMetricDates: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const tc = metric ? trendColor(metric.trend) : '#666666';
 
   return (
     <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4 min-h-[132px] flex flex-col">
       <div className="flex items-start justify-between gap-3 mb-2">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-[#E5E5E5] uppercase tracking-wider">
             {title}
           </div>
@@ -344,15 +376,26 @@ function SignalCard({
             {description}
           </div>
         </div>
-        {metric?.changePct !== null && metric?.changePct !== undefined ? (
-          <div
-            className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm shrink-0"
-            style={{ color: tc, backgroundColor: `${tc}18` }}
-          >
-            {metric.trend === 'up' ? '+' : metric.trend === 'down' ? '-' : ''}
-            {Math.abs(metric.changePct).toFixed(2)}%
-          </div>
-        ) : null}
+        <div className="flex items-start gap-1.5 shrink-0">
+          {metric && (
+            <button
+              type="button"
+              onClick={onToggleFavorite}
+              className={`rounded-sm border p-1 transition-colors ${isFavorite ? 'border-[#4B3A12] bg-[#1A160B] text-[#FBBF24]' : 'border-[#1F1F1F] bg-[#0D0D0D] text-[#666666] hover:text-[#FBBF24]'}`}
+            >
+              <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-[#FBBF24]' : ''}`} />
+            </button>
+          )}
+          {metric?.changePct !== null && metric?.changePct !== undefined ? (
+            <div
+              className="text-[11px] font-mono px-1.5 py-0.5 rounded-sm"
+              style={{ color: tc, backgroundColor: `${tc}18` }}
+            >
+              {metric.trend === 'up' ? '+' : metric.trend === 'down' ? '-' : ''}
+              {Math.abs(metric.changePct).toFixed(2)}%
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-auto">
@@ -385,11 +428,15 @@ function SectionBlock({
   subtitle,
   items,
   showMetricDates,
+  watchlist,
+  onToggleFavorite,
 }: {
   title: string;
   subtitle: string;
   items: Array<{ key: string; label: string; description: string; metric?: DashboardData['pilotMetrics'][0] }>;
   showMetricDates: boolean;
+  watchlist: { symbol: string }[];
+  onToggleFavorite: (metric: DashboardData['pilotMetrics'][number]) => void;
 }) {
   return (
     <div>
@@ -407,6 +454,8 @@ function SectionBlock({
               description={item.description}
               metric={item.metric}
               showMetricDates={showMetricDates}
+              isFavorite={item.metric ? watchlist.some((w) => w.symbol === item.metric!.symbol) : false}
+              onToggleFavorite={() => item.metric && onToggleFavorite(item.metric)}
             />
           </div>
         ))}
@@ -425,6 +474,8 @@ export function CryptoPage({
   guideDefaultOpen,
   showMetricDates,
   showLegalNote,
+  watchlist,
+  onToggleFavorite,
 }: CryptoPageProps) {
   const [fearGreedData, setFearGreedData] = useState<{
     value: number;
@@ -591,7 +642,7 @@ export function CryptoPage({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {priceMetrics.map((m) => (
             <div key={m.id}>
-              <PriceCard metric={m} showMetricDates={showMetricDates} />
+              <PriceCard metric={m} showMetricDates={showMetricDates} isFavorite={watchlist.some((w) => w.symbol === m.symbol)} onToggleFavorite={() => onToggleFavorite(m)} />
             </div>
           ))}
           {priceMetrics.length === 0 && (
@@ -618,6 +669,8 @@ export function CryptoPage({
                 description={item.description}
                 metric={item.metric}
                 showMetricDates={showMetricDates}
+                isFavorite={item.metric ? watchlist.some((w) => w.symbol === item.metric!.symbol) : false}
+                onToggleFavorite={() => item.metric && onToggleFavorite(item.metric)}
               />
             </div>
           ))}
@@ -669,6 +722,8 @@ export function CryptoPage({
         subtitle="Piyasanın Bitcoin merkezli mi, altcoin odaklı mı, yoksa savunmacı stablecoin tarafına mı kaydığını anlamak için."
         items={structureItems}
         showMetricDates={showMetricDates}
+        watchlist={watchlist}
+        onToggleFavorite={onToggleFavorite}
       />
 
       {/* ── Section 5: Türev Piyasalar ve Kaldıraç ── */}
@@ -677,6 +732,8 @@ export function CryptoPage({
         subtitle="Aşırı kaldıraç, tek taraflı kalabalık ve olası tasfiye sıkışmalarını okumak için."
         items={derivativesItems}
         showMetricDates={showMetricDates}
+        watchlist={watchlist}
+        onToggleFavorite={onToggleFavorite}
       />
 
       {/* ── Section 6: Stablecoin Likiditesi ── */}
@@ -685,6 +742,8 @@ export function CryptoPage({
         subtitle="Sisteme giren taze dolar-benzeri likiditeyi ve borsalara akış yönünü izlemek için."
         items={stablecoinItems}
         showMetricDates={showMetricDates}
+        watchlist={watchlist}
+        onToggleFavorite={onToggleFavorite}
       />
 
       <SectionBlock
@@ -692,6 +751,8 @@ export function CryptoPage({
         subtitle="Ağ içi benimsenme, sermaye kalitesi ve madencilik ekonomisi."
         items={onchainItems}
         showMetricDates={showMetricDates}
+        watchlist={watchlist}
+        onToggleFavorite={onToggleFavorite}
       />
 
       {/* ── Section 7: Makro Korelasyon Çerçevesi ── */}
@@ -759,6 +820,7 @@ export function CryptoPage({
                         aktif
                       </div>
                     </div>
+                    <div className="mt-3 mb-1 text-[10px] uppercase tracking-wider text-[#666666]">Bu metrik neyi anlatır?</div>
                     <div className="text-[12px] text-[#A3A3A3] leading-relaxed">{meaning.base}</div>
                     <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className={`rounded-sm border p-2.5 ${lowTone}`}>

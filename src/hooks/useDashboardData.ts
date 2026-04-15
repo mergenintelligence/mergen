@@ -30,6 +30,7 @@ export interface DashboardData {
     name: string;
     symbol: string;
     source: string;
+    sourceQuality: 'canli' | 'gecikmeli' | 'manuel' | 'sentetik';
     description: string | null;
     isInverse: boolean;
     latestDate: string | null;
@@ -38,6 +39,9 @@ export interface DashboardData {
     change: number | null;
     changePct: number | null;
     trend: 'up' | 'down' | 'flat';
+    comparison1w: { delta: number | null; deltaPct: number | null; trend: 'up' | 'down' | 'flat' };
+    comparison1m: { delta: number | null; deltaPct: number | null; trend: 'up' | 'down' | 'flat' };
+    comparison3m: { delta: number | null; deltaPct: number | null; trend: 'up' | 'down' | 'flat' };
     history: { date: string; value: number }[];
   }[];
   alerts: {
@@ -72,6 +76,8 @@ export interface DashboardData {
     summary: string;
     category: string;
     severity: 'medium' | 'high';
+    signalType?: 'piyasa-veri' | 'capraz-varlik' | 'pozisyon' | 'rejim';
+    metricSymbols?: string[];
   }[];
 }
 
@@ -108,6 +114,34 @@ function getMetricCadence(source: string): 'daily' | 'annual' {
   }
 
   return 'daily';
+}
+
+function getMetricSourceQuality(source: string): 'canli' | 'gecikmeli' | 'manuel' | 'sentetik' {
+  if (source.endsWith('_MANUAL')) {
+    return 'sentetik';
+  }
+
+  if ([
+    'VDEM',
+    'WORLD_HAPPINESS',
+    'WID',
+    'EDELMAN',
+    'CORNELL_ILR',
+    'ELECTION_DATA',
+    'HYPERSCALER_CAPEX',
+    'IEA',
+    'TSMC_STRUCTURAL',
+    'STRATEGIC_VALUE',
+    'FED_SPEECH',
+  ].includes(source)) {
+    return 'gecikmeli';
+  }
+
+  if (['CRYPTO_API', 'YAHOO', 'FRED_COMPOSITE'].includes(source)) {
+    return 'canli';
+  }
+
+  return 'manuel';
 }
 
 function getScoreTrend(latest: number | null, reference: number | null): 'up' | 'down' | 'flat' {
@@ -206,6 +240,34 @@ function getMetricDirection(latest: number | null, previous: number | null): 'up
   return 'flat';
 }
 
+function findReferenceValue(
+  rows: Array<{ value: number; date: string }>,
+  daysBack: number,
+): number | null {
+  if (rows.length === 0) return null;
+
+  const latestDate = new Date(rows[0].date);
+  const targetDate = new Date(latestDate);
+  targetDate.setDate(targetDate.getDate() - daysBack);
+
+  const reference = rows.find((row) => new Date(row.date) <= targetDate);
+  return reference?.value ?? null;
+}
+
+function buildComparison(latest: number | null, reference: number | null) {
+  if (latest === null || reference === null) {
+    return { delta: null, deltaPct: null, trend: 'flat' as const };
+  }
+
+  const delta = latest - reference;
+  const deltaPct = reference !== 0 ? (delta / reference) * 100 : null;
+  return {
+    delta,
+    deltaPct,
+    trend: getMetricDirection(latest, reference),
+  };
+}
+
 function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
   const divergences: DashboardData['divergences'] = [];
 
@@ -222,6 +284,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'SPY yükselirken RSP/SPY oranı geriliyor. Yükselişi büyük hisseler taşıyor, piyasa genişliği zayıf.',
       category: 'ETF ve Sermaye Akışı',
       severity: 'high',
+      signalType: 'piyasa-veri',
+      metricSymbols: ['SPY', 'RSP_SPY_RATIO'],
     });
   }
 
@@ -232,6 +296,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'Riskli varlıklar yukarıda kalırken high-yield spread veya finansal stres endeksi bozuluyor. Bu, rallinin kırılgan olabileceğini gösterir.',
       category: 'Kredi ve Finansal Stres',
       severity: 'high',
+      signalType: 'capraz-varlik',
+      metricSymbols: ['SPY', 'BAMLH0A0HYM2', 'STLFSI4'],
     });
   }
 
@@ -242,6 +308,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'Piyasa bazlı enflasyon beklentisi gerilerken Sticky veya Median CPI yukarı gidiyor. Yüzeyde rahatlama var ama çekirdek baskı sürüyor.',
       category: 'Enflasyon Baskıları',
       severity: 'high',
+      signalType: 'piyasa-veri',
+      metricSymbols: ['T10YIE', 'STICKCPIM158SFRBATL', 'MEDCPIM158SFRBCLE'],
     });
   }
 
@@ -252,6 +320,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'Normalde reel faiz artışı altını baskılar. İkisinin aynı anda güçlenmesi, fiyatlamada ekstra korku veya rezerv talebi olabileceğini düşündürür.',
       category: 'Değerli Metaller',
       severity: 'medium',
+      signalType: 'capraz-varlik',
+      metricSymbols: ['GLD', 'DFII10'],
     });
   }
 
@@ -262,6 +332,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'Fed söylemi daha güvercinleşirken finansal koşullar endeksi sıkılaşma sinyali veriyor. Söylem ile piyasa gerçekliği arasında uyumsuzluk oluşuyor.',
       category: 'Fed İçi Güç Dengesi',
       severity: 'medium',
+      signalType: 'rejim',
+      metricSymbols: ['FED_SPEAK_SENTIMENT_MOMENTUM', 'NFCI'],
     });
   }
 
@@ -272,6 +344,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'Tarım sepeti henüz sert tepki vermese de kuraklık artıyor veya stok/kullanım oranı düşüyor. Fiyat baskısı gecikmeli gelebilir.',
       category: 'Tarımsal Emtia ve Gıda Güvenliği',
       severity: 'medium',
+      signalType: 'piyasa-veri',
+      metricSymbols: ['DBA', 'US_DROUGHT_MONITOR', 'STOCKS_TO_USE_RATIO'],
     });
   }
 
@@ -282,6 +356,8 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'BTC yükselirken TOTAL3 geri çekiliyor. Kripto rallisi genele yayılmıyor, piyasa daha savunmacı bir lidere sıkışıyor.',
       category: 'Kripto Para Piyasaları',
       severity: 'medium',
+      signalType: 'pozisyon',
+      metricSymbols: ['BTCUSD', 'TOTAL3'],
     });
   }
 
@@ -292,10 +368,48 @@ function buildDivergences(metricValues: Map<string, DivergenceMetricValue>) {
       summary: 'Net likidite artarken SPY zayıf kalıyor. Piyasa ya büyüme korkusu fiyatlıyor ya da likidite henüz riskli varlıklara geçmiyor.',
       category: 'Piyasa Likiditesi',
       severity: 'medium',
+      signalType: 'capraz-varlik',
+      metricSymbols: ['NET_LIQUIDITY', 'SPY'],
     });
   }
 
-  return divergences.slice(0, 6);
+  if (direction('PM_US_RECESSION_PROB') === 'up' && direction('BAMLH0A0HYM2') !== 'up') {
+    divergences.push({
+      id: 'prediction-vs-credit-recession',
+      title: 'Prediction market resesyon fiyatlıyor ama kredi spread açılmıyor',
+      summary: 'Beklenti piyasaları resesyon riskini yukarı çekerken kredi piyasası henüz aynı sertliği doğrulamıyor.',
+      category: 'Polymarket / Kalshi Tahmin Piyasaları',
+      severity: 'high',
+      signalType: 'piyasa-veri',
+      metricSymbols: ['PM_US_RECESSION_PROB', 'BAMLH0A0HYM2'],
+    });
+  }
+
+  if (direction('GLD') === 'up' && direction('VIXCLS') !== 'up' && direction('VIX_DERIV') !== 'up') {
+    divergences.push({
+      id: 'gold-up-vix-calm',
+      title: 'Altın yükseliyor ama VIX sakin',
+      summary: 'Güvenli liman talebi altına kayarken hisse korku endeksi aynı ölçüde tepki vermiyor; stres daha seçici fiyatlanıyor olabilir.',
+      category: 'Değerli Metaller',
+      severity: 'medium',
+      signalType: 'capraz-varlik',
+      metricSymbols: ['GLD', 'VIXCLS', 'VIX_DERIV'],
+    });
+  }
+
+  if ((direction('RSP_SPY_RATIO') === 'down' || direction('AD_LINE') === 'down') && direction('SPY') === 'up') {
+    divergences.push({
+      id: 'breadth-down-index-up',
+      title: 'Breadth bozuluyor ama endeks yüksek',
+      summary: 'Endeks yukarıda kalırken breadth göstergeleri zayıflıyor; ralli dar bir liderliğe sıkışıyor olabilir.',
+      category: 'Piyasa Genişliği ve Pozisyonlanma',
+      severity: 'high',
+      signalType: 'pozisyon',
+      metricSymbols: ['AD_LINE', 'RSP_SPY_RATIO', 'SPY'],
+    });
+  }
+
+  return divergences.slice(0, 10);
 }
 
 async function mapWithConcurrency<T, R>(
@@ -600,6 +714,7 @@ export function useDashboardData(selectedCategoryId: string) {
             name: m.name,
             symbol: m.symbol,
             source: m.source,
+            sourceQuality: getMetricSourceQuality(m.source),
             description: m.description ?? null,
             isInverse: Boolean(m.is_inverse),
             latestDate,
@@ -608,6 +723,9 @@ export function useDashboardData(selectedCategoryId: string) {
             change,
             changePct,
             trend,
+            comparison1w: buildComparison(val, findReferenceValue(values, 7)),
+            comparison1m: buildComparison(val, findReferenceValue(values, 30)),
+            comparison3m: buildComparison(val, findReferenceValue(values, 90)),
             history
           });
         }

@@ -340,51 +340,6 @@ function StatCard({ metric, showMetricDates, isFavorite, onToggleFavorite }: { k
   );
 }
 
-/** Spotlight — sayfanın üstünde 4 önemli kart */
-function SpotlightCard({ metric, isFavorite, onToggleFavorite }: { key?: React.Key; metric: Metric; isFavorite: boolean; onToggleFavorite: () => void }) {
-  const isScore = isScoreMetric(metric);
-  const val = metric.value ?? 0;
-  const hasVal = metric.value !== null;
-  const inv = metric.isInverse ?? false;
-  const tone = isScore ? getScoreTone(Math.max(0, Math.min(100, val)), inv) : getProbTone(val, inv);
-  const tc = trendColor(metric);
-
-  return (
-    <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4" style={{ borderTopColor: tone.color, borderTopWidth: 2 }}>
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="text-[10px] font-semibold text-[#A3A3A3] uppercase tracking-wider leading-snug min-w-0 flex-1">{metric.name}</div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={onToggleFavorite}
-            className={`rounded-sm border p-1 transition-colors ${isFavorite ? 'border-[#4B3A12] bg-[#1A160B] text-[#FBBF24]' : 'border-[#1F1F1F] bg-[#0D0D0D] text-[#666666] hover:text-[#FBBF24]'}`}
-          >
-            <Star className={`w-3 h-3 ${isFavorite ? 'fill-[#FBBF24]' : ''}`} />
-          </button>
-          {metric.changePct !== null && (
-            <span className="text-[11px] font-mono" style={{ color: tc }}>
-              {(metric.change ?? 0) > 0 ? '+' : ''}{metric.changePct.toFixed(2)}%
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-3xl font-mono tabular-nums font-bold" style={{ color: hasVal ? tone.color : '#444' }}>
-          {hasVal ? (isScore ? Math.round(val) : `${val.toFixed(1)}%`) : '--'}
-        </span>
-        {isScore && hasVal && <span className="text-sm text-[#555]">/100</span>}
-      </div>
-      <div className="h-1 rounded-full bg-[#1A1A1A] overflow-hidden mb-2">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${hasVal ? (isScore ? Math.max(0, Math.min(100, val)) : val) : 0}%`, backgroundColor: tone.color, opacity: 0.65 }}
-        />
-      </div>
-      <div className="text-[10px] uppercase tracking-wider" style={{ color: `${tone.color}99` }}>{tone.label}</div>
-    </div>
-  );
-}
-
 function getMetricMeaning(metric: Metric) {
   const base = metric.description?.trim() || `${metric.name}, beklenti piyasası rejimini okutan yardımcı bir göstergedir.`;
   const lowerName = `${metric.name} ${metric.description ?? ''}`.toLowerCase();
@@ -417,6 +372,8 @@ function getMetricMeaning(metric: Metric) {
 
 // ─── Ana bileşen ──────────────────────────────────────────────────────────────
 
+type SummaryCard = { key: string; label: string; title: string; note: string; tone: string };
+
 interface PredictionMarketsPageProps {
   pilotMetrics: Metric[];
   aiInsight: string | null;
@@ -427,6 +384,7 @@ interface PredictionMarketsPageProps {
   showLegalNote: boolean;
   watchlist: { symbol: string }[];
   onToggleFavorite: (metric: Metric) => void;
+  summaryCards?: SummaryCard[];
 }
 
 export function PredictionMarketsPage({
@@ -439,6 +397,7 @@ export function PredictionMarketsPage({
   showLegalNote,
   watchlist,
   onToggleFavorite,
+  summaryCards = [],
 }: PredictionMarketsPageProps) {
   const [isGuideOpen, setIsGuideOpen] = useState(guideDefaultOpen);
   useEffect(() => { setIsGuideOpen(guideDefaultOpen); }, [guideDefaultOpen]);
@@ -447,50 +406,71 @@ export function PredictionMarketsPage({
   const fetchedCount = pilotMetrics.filter((m) => m.value !== null).length;
   const coverageRatio = pilotMetrics.length > 0 ? Math.round((fetchedCount / pilotMetrics.length) * 100) : 0;
   const lastUpdate =
-    pilotMetrics.map((m) => m.latestDate).filter((v): v is string => Boolean(v))
+    pilotMetrics.map((m) => m.latestUpdatedAt ?? m.latestDate).filter((v): v is string => Boolean(v))
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
   const aiReliability = aiConfidence !== null
     ? Math.max(1, Math.min(5, Math.round(aiConfidence)))
     : coverageRatio >= 85 ? 4 : coverageRatio >= 65 ? 3 : coverageRatio >= 40 ? 2 : 1;
 
-  const spotlightMetrics = SPOTLIGHT_SYMBOLS.map((s) => bySymbol.get(s)).filter(Boolean) as Metric[];
+  const spotlightMetrics = SPOTLIGHT_SYMBOLS
+    .map((s) => bySymbol.get(s))
+    .filter((metric): metric is Metric => Boolean(metric && metric.value !== null));
 
   return (
     <div className="space-y-6">
 
       {/* ── AI Yorumu ─────────────────────────────────────────────────────── */}
-      <div className="bg-[#111111] border border-[#1F1F1F] p-4 rounded-sm">
-        <div className="flex items-start gap-3 mb-3">
-          <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#666666]'}`} />
-          <div className="text-sm font-semibold text-[#E5E5E5] tracking-wide">
-            MERGEN AI — Polymarket / Kalshi Tahmin Piyasaları Analizi
+      <div
+        className="relative rounded-sm border border-[#1A2E1A] overflow-hidden p-5"
+        style={{
+          background: 'linear-gradient(135deg, #0A1A0F 0%, #111111 55%, #0D1119 100%)',
+          boxShadow: '0 0 0 1px rgba(74,222,128,0.05) inset, 0 16px 40px rgba(74,222,128,0.04)',
+        }}
+      >
+        <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #4ADE80 30%, #34D399 65%, transparent)' }} />
+
+        <div className="flex items-start gap-3 mb-4">
+          <div className="flex-shrink-0 mt-0.5">
+            <div
+              className={`w-2 h-2 rounded-full ${aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#444444]'}`}
+              style={{ boxShadow: aiInsight ? '0 0 6px #4ADE80' : 'none' }}
+            />
           </div>
-          <div className="ml-auto flex items-center gap-3 border border-[#1F1F1F] bg-[#0D0D0D] px-3 py-2 rounded-sm">
-            <div className="text-sm font-semibold text-[#E5E5E5] whitespace-nowrap">
-              Güven {aiReliability}/5
-            </div>
-            <div className="flex items-center gap-1">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#4ADE80] mb-1.5">MERGEN AI · Analiz</div>
+            <div className="text-[15px] font-bold text-[#E5E5E5] leading-snug">Polymarket / Kalshi Tahmin Piyasaları</div>
+          </div>
+          <div className="flex-shrink-0 flex items-center gap-2 border border-[#1A2E1A] bg-[#0A1A0F] px-3 py-2 rounded-sm">
+            <span className="text-[11px] font-mono text-[#4ADE80] whitespace-nowrap">Güven {aiReliability}/5</span>
+            <div className="flex items-center gap-0.5">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`h-2.5 w-5 rounded-[2px] border ${i < aiReliability ? 'border-[#4ADE80] bg-[#4ADE80]' : 'border-[#2A2A2A] bg-transparent'}`}
+                  className="h-2 w-4 rounded-[2px]"
+                  style={{
+                    background: i < aiReliability ? '#4ADE80' : '#1A2A1A',
+                    boxShadow: i < aiReliability ? '0 0 4px rgba(74,222,128,0.5)' : 'none',
+                  }}
                 />
               ))}
             </div>
           </div>
         </div>
+
+        <div className="border-t border-[#1A2E1A] mb-4" />
+
         {aiInsight ? (
           <>
-            <div className="text-sm text-[#E5E5E5] leading-relaxed">{aiInsight}</div>
+            <div className="text-[13px] text-[#D4D4D4] leading-relaxed">{aiInsight}</div>
             {aiSimpleSummary && (
-              <div className="mt-4 pt-4 border-t border-[#1F1F1F]">
-                <div className="text-[10px] text-[#A3A3A3] uppercase tracking-wider mb-2">Sade Özet</div>
-                <div className="text-sm text-[#D4D4D4] leading-relaxed">{aiSimpleSummary}</div>
+              <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
+                <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">Sade Özet</div>
+                <div className="text-[13px] text-[#AAAAAA] leading-relaxed">{aiSimpleSummary}</div>
               </div>
             )}
           </>
         ) : (
-          <div className="text-sm text-[#666666] leading-relaxed">
+          <div className="text-[13px] text-[#555555] leading-relaxed italic">
             Bu kategori için henüz AI yorumu oluşmadı. Gemini kotası doluysa kart boş kalabilir. Daha sonra tekrar deneyiniz.
           </div>
         )}
@@ -517,18 +497,83 @@ export function PredictionMarketsPage({
         </div>
       </div>
 
+      {/* ── Sinyal Özet Kartları ── */}
+      {summaryCards.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {summaryCards.map((item) => (
+            <div key={item.key} className={`rounded-sm border px-4 py-3 ${item.tone}`}>
+              <div className="text-[10px] uppercase tracking-wider opacity-80 mb-2">{item.label}</div>
+              <div className="text-sm font-medium text-[#F5F5F5] leading-snug">{item.title}</div>
+              <div className="mt-2 text-xs text-[#A3A3A3] leading-relaxed">{item.note}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Spotlight ─────────────────────────────────────────────────────── */}
       {spotlightMetrics.length > 0 && (
         <div>
-          <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-3">Kritik Sinyaller</div>
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <div
+            className="relative mb-4 rounded-sm border px-4 py-3 border-[#3B3116] bg-[#141108]"
+            style={{
+              backgroundImage: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)',
+              boxShadow: '0 0 0 1px rgba(251,191,36,0.04) inset',
+            }}
+          >
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-sm bg-[#FBBF24]" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[11px] text-[#A3A3A3] uppercase tracking-wider">
+                  <span
+                    className="flex h-7 w-7 items-center justify-center rounded-sm border border-[#3B3116] bg-[#1A150A] text-[#FBBF24]"
+                    style={{ boxShadow: 'inset 0 0 18px rgba(251,191,36,0.12)' }}
+                  >
+                    <Radar className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="text-[#D4D4D4]">Kritik Sinyaller</span>
+                </div>
+                <div className="text-xs text-[#8A8A8A] mt-1 leading-relaxed">
+                  Prediction market tarafında ilk bakışta izlenmesi gereken öne çıkan metrikler.
+                </div>
+              </div>
+              <div
+                className="shrink-0 rounded-sm border px-2 py-1 text-[10px] uppercase tracking-wider text-[#A3A3A3] border-[#3B3116] bg-[#1A150A]"
+                style={{ boxShadow: 'inset 0 0 14px rgba(251,191,36,0.10)' }}
+              >
+                {spotlightMetrics.length} metrik
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {spotlightMetrics.map((m) => (
-              <SpotlightCard
-                key={m.id}
-                metric={m}
-                isFavorite={watchlist.some((w) => w.symbol === m.symbol)}
-                onToggleFavorite={() => onToggleFavorite(m)}
-              />
+              isProbMetric(m) ? (
+                <ProbCard
+                  key={m.id}
+                  metric={m}
+                  accent="#FBBF24"
+                  showMetricDates={showMetricDates}
+                  isFavorite={watchlist.some((w) => w.symbol === m.symbol)}
+                  onToggleFavorite={() => onToggleFavorite(m)}
+                />
+              ) : isScoreMetric(m) ? (
+                <ScoreCard
+                  key={m.id}
+                  metric={m}
+                  accent="#FBBF24"
+                  showMetricDates={showMetricDates}
+                  isFavorite={watchlist.some((w) => w.symbol === m.symbol)}
+                  onToggleFavorite={() => onToggleFavorite(m)}
+                />
+              ) : (
+                <StatCard
+                  key={m.id}
+                  metric={m}
+                  showMetricDates={showMetricDates}
+                  isFavorite={watchlist.some((w) => w.symbol === m.symbol)}
+                  onToggleFavorite={() => onToggleFavorite(m)}
+                />
+              )
             ))}
           </div>
         </div>
@@ -538,7 +583,7 @@ export function PredictionMarketsPage({
       {SECTIONS.map((section) => {
         const metrics = section.symbols
           .map((s) => bySymbol.get(s))
-          .filter(Boolean) as Metric[];
+          .filter((metric): metric is Metric => Boolean(metric && metric.value !== null));
         if (metrics.length === 0) return null;
 
         const tone = getSectionTone(section.accent);

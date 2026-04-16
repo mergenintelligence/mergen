@@ -5,7 +5,7 @@ import {
 import {
   Activity, TrendingUp, TrendingDown, Minus,
   Zap, Map, ArrowRight, BookOpen, Eye, Globe,
-  ShieldAlert, Landmark, Flame, Thermometer, Ship, Flag,
+  ShieldAlert, Landmark, Flame, Thermometer, Ship, Flag, Star, X,
 } from 'lucide-react';
 import type { DashboardData } from '../hooks/useDashboardData';
 
@@ -137,6 +137,16 @@ const REGIME_FLOWS: Record<string, {
 // PROPS
 // ─────────────────────────────────────────────────────────────
 
+type WatchlistItem = {
+  symbol: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  latestValue: number | null;
+  latestDate: string | null;
+  trend: 'up' | 'down' | 'flat';
+};
+
 interface HomePageProps {
   totalScore: number | null;
   totalScoreChange7d: number | null;
@@ -154,6 +164,8 @@ interface HomePageProps {
   totalFetchedMetrics: number;
   totalTrackedMetrics: number;
   showDirectionCard?: boolean;
+  watchlist?: WatchlistItem[];
+  onRemoveFromWatchlist?: (symbol: string) => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -457,50 +469,194 @@ function WorldMap({
 
       // Adjust score per mode
       if (activeMode === 'capital') {
+        // High score = lower net capital stress / stronger capital absorption.
+        // We blend market depth, liquidity, FX stability and credit conditions,
+        // then add regional structural access to global capital.
         const etf = findScore(categories, 'etf', 'sermaye');
-        score = region.id === 'northamerica' ? etf
-          : region.id === 'russia' ? 18
-          : region.id === 'china' ? 32
-          : region.id === 'europe' ? etf * 0.88
-          : score * 0.82;
+        const liquidity = findScore(categories, 'likidite');
+        const credit = findScore(categories, 'kredi', 'finansal stres');
+        const fx = findScore(categories, 'döviz', 'kur');
+        const globalRisk = findScore(categories, 'küresel risk');
+
+        const capitalResilienceBase = (
+          etf * 0.34
+          + liquidity * 0.24
+          + credit * 0.16
+          + fx * 0.14
+          + globalRisk * 0.12
+        );
+
+        const regionalBias: Record<string, number> = {
+          northamerica: 18,
+          europe: 6,
+          russia: -34,
+          middleeast: 4,
+          africa: -16,
+          southasia: -8,
+          china: -12,
+          japan: 8,
+          seasia: 2,
+          southamerica: -10,
+          australia: 10,
+        };
+
+        score = clampScore(capitalResilienceBase + (regionalBias[region.id] ?? 0));
       } else if (activeMode === 'energy') {
-        const enerji = findScore(categories, 'enerji');
-        score = region.id === 'middleeast' ? enerji
-          : region.id === 'russia' ? enerji * 0.9
-          : region.id === 'northamerica' ? 72
-          : region.id === 'australia' ? 68
-          : region.id === 'seasia' ? 45
-          : 35;
+        // High score = lower net energy pressure / stronger resilience.
+        // We combine the global energy regime with inflation pass-through,
+        // trade-chain fragility and regional structural dependence.
+        const energy = findScore(categories, 'enerji');
+        const trade = findScore(categories, 'ticaret', 'tedarik');
+        const inflation = findScore(categories, 'enflasyon');
+        const growth = findScore(categories, 'büyüme', 'reel ekonomi');
+        const globalRisk = findScore(categories, 'küresel risk');
+
+        const energyResilienceBase = (
+          energy * 0.42
+          + trade * 0.16
+          + growth * 0.12
+          + (100 - inflation) * 0.14
+          + globalRisk * 0.16
+        );
+
+        const regionalBias: Record<string, number> = {
+          northamerica: 18,   // shale + gas exporter + infrastructure depth
+          southamerica: 8,    // producer regions but still infrastructure gaps
+          europe: -18,        // import dependence and gas sensitivity
+          russia: -6,         // exporter, but sanctions/logistics pressure
+          middleeast: -12,    // producer strength offset by chokepoint/conflict risk
+          africa: -6,         // resource base exists, resilience weak/infrastructure thin
+          southasia: -20,     // heavy import dependence
+          china: -14,         // giant importer, industrial energy intensity
+          japan: -24,         // near-total import dependence
+          seasia: -10,        // mixed system, still externally exposed
+          australia: 16,      // LNG/coal exporter
+        };
+
+        score = clampScore(energyResilienceBase + (regionalBias[region.id] ?? 0));
       } else if (activeMode === 'inflation') {
-        const enfl = findScore(categories, 'enflasyon');
-        const base = 100 - enfl;
-        const bias: Record<string, number> = {
-          africa: -22, southamerica: -18, russia: -20, middleeast: -5,
-          northamerica: 0, europe: 5, china: 10, japan: 2, seasia: -8, southasia: -15, australia: 2,
+        // High score = lower inflation pressure / better inflation resilience.
+        // Energy pass-through, FX stability and demand conditions all matter.
+        const inflation = findScore(categories, 'enflasyon');
+        const energy = findScore(categories, 'enerji');
+        const fx = findScore(categories, 'döviz', 'kur');
+        const growth = findScore(categories, 'büyüme', 'reel ekonomi');
+
+        const inflationResilienceBase = (
+          (100 - inflation) * 0.46
+          + energy * 0.18
+          + fx * 0.18
+          + growth * 0.18
+        );
+
+        const regionalBias: Record<string, number> = {
+          northamerica: 4,
+          europe: 2,
+          russia: -20,
+          middleeast: -4,
+          africa: -22,
+          southasia: -14,
+          china: 10,
+          japan: 6,
+          seasia: -6,
+          southamerica: -18,
+          australia: 5,
         };
-        score = clampScore(base + (bias[region.id] ?? 0), 8);
+
+        score = clampScore(inflationResilienceBase + (regionalBias[region.id] ?? 0), 8);
       } else if (activeMode === 'growth') {
-        const buyume = findScore(categories, 'büyüme', 'reel ekonomi');
-        const bias: Record<string, number> = {
-          southasia: 15, seasia: 10, africa: 5, northamerica: 0,
-          china: -8, europe: -12, russia: -15, japan: -10, southamerica: -5, australia: 2,
+        // High score = stronger growth resilience / better cyclical impulse.
+        // We blend real-economy strength with trade, credit and structural growth engines.
+        const growth = findScore(categories, 'büyüme', 'reel ekonomi');
+        const trade = findScore(categories, 'ticaret', 'tedarik');
+        const credit = findScore(categories, 'kredi', 'finansal stres');
+        const tech = findScore(categories, 'teknoloji', 'yapısal');
+
+        const growthResilienceBase = (
+          growth * 0.44
+          + trade * 0.18
+          + credit * 0.16
+          + tech * 0.12
+          + score * 0.10
+        );
+
+        const regionalBias: Record<string, number> = {
+          northamerica: 4,
+          europe: -12,
+          russia: -18,
+          middleeast: -2,
+          africa: 2,
+          southasia: 15,
+          china: -8,
+          japan: -10,
+          seasia: 10,
+          southamerica: -4,
+          australia: 6,
         };
-        score = clampScore(buyume + (bias[region.id] ?? 0));
+
+        score = clampScore(growthResilienceBase + (regionalBias[region.id] ?? 0));
       } else if (activeMode === 'trade') {
-        const ticaret = findScore(categories, 'ticaret', 'tedarik');
-        const mult: Record<string, number> = {
-          china: 1.0, seasia: 0.95, europe: 0.88, northamerica: 0.80,
-          australia: 0.72, southasia: 0.70, southamerica: 0.65, middleeast: 0.60, africa: 0.55, russia: 0.45,
+        // High score = stronger trade-chain resilience / healthier logistics pulse.
+        // We blend trade, global risk, energy and growth because trade does not live alone.
+        const trade = findScore(categories, 'ticaret', 'tedarik');
+        const globalRisk = findScore(categories, 'küresel risk');
+        const energy = findScore(categories, 'enerji');
+        const growth = findScore(categories, 'büyüme', 'reel ekonomi');
+
+        const tradeResilienceBase = (
+          trade * 0.46
+          + globalRisk * 0.16
+          + energy * 0.16
+          + growth * 0.12
+          + score * 0.10
+        );
+
+        const regionalBias: Record<string, number> = {
+          northamerica: 2,
+          europe: 4,
+          russia: -24,
+          middleeast: -2,
+          africa: -10,
+          southasia: -4,
+          china: 8,
+          japan: 6,
+          seasia: 12,
+          southamerica: -6,
+          australia: 8,
         };
-        score = ticaret * (mult[region.id] ?? 0.70);
+
+        score = clampScore(tradeResilienceBase + (regionalBias[region.id] ?? 0));
       } else if (activeMode === 'geo') {
-        // Lower score = higher geopolitical risk (inverted for risk representation)
-        const geoRisk: Record<string, number> = {
-          russia: 8, middleeast: 15, china: 28, europe: 38,
-          northamerica: 60, southasia: 42, seasia: 45, africa: 35,
-          southamerica: 55, japan: 50, australia: 68,
+        // High score = lower geopolitical fragility / better shock absorption.
+        // We combine political-social stability with macro fragility and energy dependence.
+        const globalRisk = findScore(categories, 'küresel risk');
+        const social = findScore(categories, 'siyasi', 'sosyal');
+        const credit = findScore(categories, 'kredi', 'finansal stres');
+        const energy = findScore(categories, 'enerji');
+
+        const geoResilienceBase = (
+          globalRisk * 0.34
+          + social * 0.24
+          + credit * 0.14
+          + energy * 0.12
+          + score * 0.16
+        );
+
+        const regionalBias: Record<string, number> = {
+          northamerica: 8,
+          europe: -10,
+          russia: -34,
+          middleeast: -28,
+          africa: -18,
+          southasia: -10,
+          china: -16,
+          japan: 2,
+          seasia: -8,
+          southamerica: 2,
+          australia: 12,
         };
-        score = geoRisk[region.id] ?? 50;
+
+        score = clampScore(geoResilienceBase + (regionalBias[region.id] ?? 0));
       }
 
       scores[region.id] = clampScore(Math.round(score));
@@ -565,11 +721,18 @@ function WorldMap({
       </div>
 
       {/* SVG Map */}
-      <div className="relative" style={{ backgroundColor: '#060C14' }}>
+      <div
+        className="relative w-full"
+        style={{
+          background: 'linear-gradient(180deg, #071522 0%, #07111D 55%, #04090F 100%)',
+          aspectRatio: '960 / 500',
+        }}
+      >
         <svg
           viewBox="0 0 960 500"
-          className="w-full"
-          style={{ height: '360px', display: 'block' }}
+          width="100%"
+          height="100%"
+          style={{ display: 'block' }}
           onMouseMove={handleMouseMove}
         >
           <defs>
@@ -583,6 +746,9 @@ function WorldMap({
               <stop offset="0%" stopColor="rgba(16,34,52,0)" />
               <stop offset="100%" stopColor="rgba(0,0,0,0.34)" />
             </radialGradient>
+            <pattern id="oceanGrid" width="80" height="56" patternUnits="userSpaceOnUse">
+              <path d="M80 0H0V56" fill="none" stroke="#0D1E30" strokeWidth="0.6" strokeDasharray="4 6" opacity="0.85" />
+            </pattern>
             <filter id="mapLandShadow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000000" floodOpacity="0.28" />
             </filter>
@@ -590,15 +756,7 @@ function WorldMap({
           {/* Ocean background */}
           <rect width="960" height="500" fill="url(#oceanGrad)" />
           <rect width="960" height="500" fill="url(#oceanVignette)" />
-
-          {/* Latitude grid lines */}
-          {[56, 111, 167, 222, 278, 333, 389, 444].map(y => (
-            <line key={y} x1="0" y1={y} x2="960" y2={y} stroke="#0D1E30" strokeWidth="0.6" strokeDasharray="4,6" />
-          ))}
-          {/* Longitude grid lines */}
-          {[80, 160, 240, 320, 400, 480, 560, 640, 720, 800, 880].map(x => (
-            <line key={x} x1={x} y1="0" x2={x} y2="500" stroke="#0D1E30" strokeWidth="0.6" strokeDasharray="4,6" />
-          ))}
+          <rect width="960" height="500" fill="url(#oceanGrid)" opacity="0.9" />
 
           {/* Equator line */}
           <line x1="0" y1={250} x2="960" y2={250} stroke="#122030" strokeWidth="1" />
@@ -1340,6 +1498,8 @@ export function HomePage({
   totalFetchedMetrics,
   totalTrackedMetrics,
   showDirectionCard = true,
+  watchlist = [],
+  onRemoveFromWatchlist,
 }: HomePageProps) {
   const scoredCategories = categories.filter(c => c.score !== null);
   const regime = scoreRegime(totalScore);
@@ -1377,6 +1537,48 @@ export function HomePage({
                 {homeInsight ?? 'Bu alan için henüz yorum oluşmadı. Veri akışı tamamlandığında özet burada görünecek.'}
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Watchlist ───────────────────────────────────── */}
+      {watchlist.length > 0 && (
+        <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A1A]">
+            <Star className="w-4 h-4 text-[#FBBF24]" />
+            <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">İzleme Listesi</span>
+            <span className="ml-auto text-[11px] text-[#555555] font-mono">{watchlist.length} metrik</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1A1A1A]">
+            {watchlist.map((item) => (
+              <div key={item.symbol} className="bg-[#111111] px-4 py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-semibold text-[#D4D4D4] truncate">{item.name}</div>
+                  <div className="text-[10px] text-[#555555] uppercase tracking-wider mt-0.5">{item.categoryName}</div>
+                </div>
+                <div className="shrink-0 text-right">
+                  {item.latestValue !== null ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-mono font-semibold text-[#D4D4D4]">
+                        {item.latestValue % 1 === 0 ? item.latestValue.toFixed(0) : item.latestValue.toFixed(2)}
+                      </span>
+                      {item.trend === 'up' && <TrendingUp className="w-3.5 h-3.5 text-[#4ADE80]" />}
+                      {item.trend === 'down' && <TrendingDown className="w-3.5 h-3.5 text-[#F87171]" />}
+                      {item.trend === 'flat' && <Minus className="w-3.5 h-3.5 text-[#555555]" />}
+                    </div>
+                  ) : (
+                    <span className="text-[13px] font-mono text-[#444444]">—</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemoveFromWatchlist?.(item.symbol)}
+                  className="shrink-0 text-[#333333] hover:text-[#888888] transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -299,6 +299,20 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
         ['2023-01-01', 10.4], ['2024-01-01', 11.6], ['2025-01-01', 12.3], ['2026-01-01', 12.8],
       ],
     };
+    const buildFallbackDailySeries = (latest: number, days = 30) => {
+      return Array.from({ length: days }, (_, index) => {
+        const date = new Date();
+        date.setUTCDate(date.getUTCDate() - (days - index - 1));
+        const waveA = Math.sin(index / 4.8) * 0.06;
+        const waveB = Math.cos(index / 7.2) * 0.03;
+        const value = Number((latest * (1 + waveA + waveB)).toFixed(4));
+        return {
+          metric_id: metricId,
+          value,
+          date: date.toISOString().split('T')[0],
+        };
+      });
+    };
     const creditManualFallbackSeries: Record<string, readonly (readonly [string, number])[]> = {
       COMMERCIAL_PAPER_SPREAD: [
         ['2020-01-01', 0.24], ['2020-04-01', 1.92], ['2020-07-01', 0.48], ['2020-10-01', 0.31],
@@ -489,6 +503,18 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
       ['2026-01-01', 7090],
     ] as const;
     const preciousManualFallbackSeries: Record<string, readonly (readonly [string, number])[]> = {
+      RHODIUM_SPOT: [
+        ['2020-01-01', 8200], ['2021-01-01', 18900], ['2022-01-01', 15400], ['2023-01-01', 4800], ['2024-01-01', 4350], ['2025-01-01', 4525], ['2026-01-01', 4680],
+      ],
+      IRIDIUM_SPOT: [
+        ['2020-01-01', 1560], ['2021-01-01', 2480], ['2022-01-01', 6120], ['2023-01-01', 5020], ['2024-01-01', 4280], ['2025-01-01', 3910], ['2026-01-01', 3760],
+      ],
+      RUTHENIUM_SPOT: [
+        ['2020-01-01', 265], ['2021-01-01', 455], ['2022-01-01', 690], ['2023-01-01', 545], ['2024-01-01', 472], ['2025-01-01', 448], ['2026-01-01', 438],
+      ],
+      OSMIUM_SPOT: [
+        ['2020-01-01', 1180], ['2021-01-01', 1285], ['2022-01-01', 1390], ['2023-01-01', 1465], ['2024-01-01', 1530], ['2025-01-01', 1585], ['2026-01-01', 1610],
+      ],
       CENTRAL_BANK_GOLD_BUYING: [
         ['2020-01-01', 255], ['2021-01-01', 463], ['2022-01-01', 1082], ['2023-01-01', 1037], ['2024-01-01', 986], ['2025-01-01', 912], ['2026-01-01', 905],
       ],
@@ -1258,12 +1284,45 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
     }
 
     if (predictionManualSeriesConfig[seriesId]) {
-      console.log(`Fetching synthetic prediction metric ${seriesId}...`);
-      await persistFallbackSeries(buildSyntheticSeries(
-        predictionManualSeriesConfig[seriesId].base,
-        predictionManualSeriesConfig[seriesId].slope,
-        predictionManualSeriesConfig[seriesId].amplitude ?? 0,
-      ), seriesId);
+      console.log(`Fetching live prediction market metric ${seriesId}...`);
+      const response = await fetch(`/api/prediction/series?series_id=${encodeURIComponent(seriesId)}`);
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to fetch prediction market series ${seriesId}: ${response.status} ${text}`);
+      }
+
+      const data = await response.json();
+      const valuesToInsert = (data.observations || [])
+        .filter((entry: any) => entry.value !== '.')
+        .map((entry: any) => ({
+          metric_id: metricId,
+          date: entry.date,
+          value: Number(entry.value),
+        }))
+        .filter((entry: any) => Number.isFinite(entry.value));
+
+      if (valuesToInsert.length === 0) {
+        console.log(`No live prediction market data found for ${seriesId}`);
+        const { error } = await supabase.from('metric_values').delete().eq('metric_id', metricId);
+        if (error) {
+          console.error(`Error clearing stale prediction values for ${seriesId}:`, error);
+        }
+        return;
+      }
+
+      for (let i = 0; i < valuesToInsert.length; i += 1000) {
+        const chunk = valuesToInsert.slice(i, i + 1000);
+        const { error } = await supabase
+          .from('metric_values')
+          .upsert(chunk, { onConflict: 'metric_id, date' });
+
+        if (error) {
+          console.error(`Error saving prediction market chunk for ${seriesId}:`, error);
+        }
+      }
+
+      console.log(`Successfully saved live prediction market data for ${seriesId}`);
       return;
     }
 
@@ -1602,6 +1661,7 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
       'NET_STABLECOIN_FLOW',
       'USDT_PRINTING',
       'GOOGLE_TRENDS_BTC',
+      'SOCIAL_DOMINANCE_SCORE',
     ];
 
     if (cryptoApiSymbols.includes(seriesId)) {
@@ -1644,13 +1704,20 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
     }
 
     // Özel Metrik: Yahoo Finance üzerinden çekilecekler
-    const yahooSymbols = ['MOVE', 'DX-Y.NYB', 'GC=F', 'CL=F', 'MAGS', 'IGV', 'BTC', 'SMH', 'QQQ', 'QQQ_TECH', 'HG=F', 'TSM', 'LIT', 'CLOU', 'CIBR', 'ARKK', 'ARKK_TECH', 'NVDA', 'URA', 'EQIX', 'PLTR', 'SPY', 'XLF', 'XLE', 'IBIT', 'GLD', 'SLV', 'PPLT', 'PALL', 'GDX', 'SIL', 'WEAT', 'CORN', 'SOYB', 'DBA', 'JO', 'CANE', 'BZ=F', 'NG=F', 'USO', 'UNG', 'FXY', 'EEM', 'EMB', 'FXI', 'EWZ', 'BTCUSD', 'ETH', 'BNB', 'XRP', 'COIN', 'MSTR', 'CRCL', 'BOTZ', 'PNQI', 'RSP', 'EMXC', 'EWW', 'EIDO', 'VNM', 'EPI', 'TUR', 'EWT', 'EURUSD', 'CHFUSD', 'AUDJPY', 'SGDUSD', 'NOKUSD', 'DXY_FX', 'BTCUSD_FX', 'URA_ENERGY', 'RB=F', 'HO=F', 'KROP', 'CC=F', 'LIVE_CATTLE_FUTURES'];
+    const yahooSymbols = ['MOVE', 'DX-Y.NYB', 'GC=F', 'SI=F', 'PL=F', 'PA=F', 'GOLD_SPOT_PM', 'SILVER_SPOT_PM', 'PLATINUM_SPOT_PM', 'PALLADIUM_SPOT_PM', 'CL=F', 'MAGS', 'IGV', 'BTC', 'SMH', 'QQQ', 'QQQ_TECH', 'HG=F', 'TSM', 'LIT', 'CLOU', 'CIBR', 'ARKK', 'ARKK_TECH', 'NVDA', 'URA', 'EQIX', 'PLTR', 'SPY', 'XLF', 'XLE', 'IBIT', 'GLD', 'SLV', 'PPLT', 'PALL', 'GDX', 'SIL', 'WEAT', 'CORN', 'SOYB', 'DBA', 'JO', 'CANE', 'BZ=F', 'NG=F', 'USO', 'UNG', 'FXY', 'EEM', 'EMB', 'FXI', 'EWZ', 'BTCUSD', 'ETH', 'BNB', 'XRP', 'SOL', 'TRX', 'DOGE', 'HYPE', 'COIN', 'MSTR', 'CRCL', 'BOTZ', 'PNQI', 'RSP', 'EMXC', 'EWW', 'EIDO', 'VNM', 'EPI', 'TUR', 'EWT', 'EURUSD', 'CHFUSD', 'AUDJPY', 'SGDUSD', 'NOKUSD', 'DXY_FX', 'BTCUSD_FX', 'URA_ENERGY', 'RB=F', 'HO=F', 'KROP', 'CC=F', 'LIVE_CATTLE_FUTURES'];
     
     if (yahooSymbols.includes(seriesId)) {
       const symbolMap: Record<string, string> = {
         'MOVE': '^MOVE',
         'DX-Y.NYB': 'DX-Y.NYB',
         'GC=F': 'GC=F',
+        'SI=F': 'SI=F',
+        'PL=F': 'PL=F',
+        'PA=F': 'PA=F',
+        'GOLD_SPOT_PM': 'GC=F',
+        'SILVER_SPOT_PM': 'SI=F',
+        'PLATINUM_SPOT_PM': 'PL=F',
+        'PALLADIUM_SPOT_PM': 'PA=F',
         'CL=F': 'CL=F',
         'MAGS': 'MAGS',
         'IGV': 'IGV',
@@ -1702,6 +1769,10 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
         'ETH': 'ETH-USD',
         'BNB': 'BNB-USD',
         'XRP': 'XRP-USD',
+        'SOL': 'SOL-USD',
+        'TRX': 'TRX-USD',
+        'DOGE': 'DOGE-USD',
+        'HYPE': 'HYPE-USD',
         'COIN': 'COIN',
         'MSTR': 'MSTR',
         'CRCL': 'CRCL',
@@ -1757,7 +1828,10 @@ export async function fetchFredSeries(seriesId: string, metricId: string) {
             value: Number(obs.close),
             date: dateStr
           };
-        });
+        })
+        .filter((obs: any) => Number.isFinite(obs.value) && obs.value > 0);
+
+      if (validObservations.length === 0) return;
 
       for (let i = 0; i < validObservations.length; i += 1000) {
         const chunk = validObservations.slice(i, i + 1000);

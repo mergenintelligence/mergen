@@ -34,6 +34,7 @@ export interface DashboardData {
     description: string | null;
     isInverse: boolean;
     latestDate: string | null;
+    latestUpdatedAt: string | null;
     cadence: 'daily' | 'annual';
     value: number | null;
     change: number | null;
@@ -683,6 +684,7 @@ export function useDashboardData(selectedCategoryId: string) {
           const values = valuesByMetricId.get(m.id) ?? [];
           let val = null;
           let latestDate: string | null = null;
+          let latestUpdatedAt: string | null = null;
           let change = null;
           let changePct = null;
           let trend: 'up' | 'down' | 'flat' = 'flat';
@@ -692,6 +694,7 @@ export function useDashboardData(selectedCategoryId: string) {
           if (values.length > 0) {
             val = values[0].value;
             latestDate = values[0].date;
+            latestUpdatedAt = values[0].created_at;
             if (!latestUpdateStr || new Date(values[0].created_at) > new Date(latestUpdateStr)) {
               latestUpdateStr = values[0].created_at;
             }
@@ -718,6 +721,7 @@ export function useDashboardData(selectedCategoryId: string) {
             description: m.description ?? null,
             isInverse: Boolean(m.is_inverse),
             latestDate,
+            latestUpdatedAt,
             cadence,
             value: val,
             change,

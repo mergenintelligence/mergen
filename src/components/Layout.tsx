@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Activity, AlertTriangle, Settings, BarChart2, Globe, TrendingDown, Users, Cpu, Landmark, DollarSign, Hexagon, Wheat, Zap, ArrowLeftRight, Building2, TrendingUp, Bitcoin, Search } from 'lucide-react';
+import { Home, Activity, AlertTriangle, Settings, BarChart2, Globe, TrendingDown, Users, Cpu, Landmark, DollarSign, Hexagon, Wheat, Zap, ArrowLeftRight, Building2, TrendingUp, Bitcoin, Search, BookOpen } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -254,6 +254,18 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
           </nav>
 
           <div className="px-4 mt-6 mb-1.5 text-[10px] font-semibold text-[#666666] uppercase tracking-[0.16em]">
+            İçerik
+          </div>
+          <nav className="space-y-0.5 mb-4">
+            <NavItem
+              icon={<BookOpen />}
+              label="Haftalık Rapor"
+              active={selectedCategoryId === 'weekly-reports'}
+              onClick={() => onSelectCategory && onSelectCategory('weekly-reports')}
+            />
+          </nav>
+
+          <div className="px-4 mb-1.5 text-[10px] font-semibold text-[#666666] uppercase tracking-[0.16em]">
             Sistem
           </div>
           <nav className="space-y-0.5">

@@ -8,6 +8,10 @@ const COIN_META: Record<string, { label: string; color: string; symbol: string }
   ETH:    { label: 'Ethereum', color: '#627EEA', symbol: 'ETH' },
   BNB:    { label: 'BNB', color: '#F3BA2F', symbol: 'BNB' },
   XRP:    { label: 'XRP', color: '#00AAE4', symbol: 'XRP' },
+  SOL:    { label: 'Solana', color: '#14F195', symbol: 'SOL' },
+  TRX:    { label: 'TRON', color: '#FF060A', symbol: 'TRX' },
+  DOGE:   { label: 'Dogecoin', color: '#C2A633', symbol: 'DOGE' },
+  HYPE:   { label: 'HYPE', color: '#7C3AED', symbol: 'HYPE' },
 };
 
 const MARKET_META: Record<string, { label: string; description: string }> = {
@@ -38,6 +42,7 @@ const STABLECOIN_META: Record<string, { label: string; description: string }> = 
 
 const SENTIMENT_META: Record<string, { label: string; description: string }> = {
   GOOGLE_TRENDS_BTC: { label: 'Google Trends: Bitcoin', description: 'Bireysel ilginin ve anlatı sıcaklığının arama verisi karşılığıdır.' },
+  SOCIAL_DOMINANCE_SCORE: { label: 'Social dominance / social mentions', description: 'Sosyal ağlardaki görünürlük, konuşulma yoğunluğu ve anlatının topluluk tarafındaki yayılımını ölçer.' },
 };
 
 const ONCHAIN_META: Record<string, { label: string; description: string }> = {
@@ -77,6 +82,8 @@ interface FearGreedEntry {
   timestamp: string;
 }
 
+type SummaryCard = { key: string; label: string; title: string; note: string; tone: string };
+
 interface CryptoPageProps {
   pilotMetrics: DashboardData['pilotMetrics'];
   aiInsight: string | null;
@@ -87,6 +94,73 @@ interface CryptoPageProps {
   showLegalNote: boolean;
   watchlist: { symbol: string }[];
   onToggleFavorite: (metric: DashboardData['pilotMetrics'][number]) => void;
+  summaryCards?: SummaryCard[];
+}
+
+function getCryptoSectionTone(title: string) {
+  const lower = title.toLowerCase();
+
+  if (lower.includes('breadth') || lower.includes('yapı')) {
+    return {
+      border: 'border-[#18313C]',
+      bg: 'bg-[#0A1216]',
+      accent: '#67E8F9',
+      shadow: '0 0 0 1px rgba(103,232,249,0.05) inset, 0 14px 30px rgba(103,232,249,0.05)',
+    };
+  }
+
+  if (lower.includes('türev') || lower.includes('kaldıraç')) {
+    return {
+      border: 'border-[#3C3113]',
+      bg: 'bg-[#141008]',
+      accent: '#FBBF24',
+      shadow: '0 0 0 1px rgba(251,191,36,0.05) inset, 0 14px 30px rgba(251,191,36,0.05)',
+    };
+  }
+
+  if (lower.includes('stablecoin') || lower.includes('likidite')) {
+    return {
+      border: 'border-[#1E341C]',
+      bg: 'bg-[#0C120B]',
+      accent: '#86EFAC',
+      shadow: '0 0 0 1px rgba(134,239,172,0.05) inset, 0 14px 30px rgba(134,239,172,0.05)',
+    };
+  }
+
+  return {
+    border: 'border-[#2A2A2A]',
+    bg: 'bg-[#111111]',
+    accent: '#A3A3A3',
+    shadow: '0 0 0 1px rgba(163,163,163,0.04) inset',
+  };
+}
+
+function CryptoSectionHeader({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle?: string;
+}) {
+  const tone = getCryptoSectionTone(title);
+
+  return (
+    <div
+      className={`relative mb-4 overflow-hidden rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
+      style={{ boxShadow: tone.shadow }}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: tone.accent }} />
+      <div>
+        <div
+          className="mb-2 inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
+          style={{ color: tone.accent, borderColor: `${tone.accent}33`, backgroundColor: `${tone.accent}12` }}
+        >
+          {title}
+        </div>
+        {subtitle && <div className="text-xs text-[#8A8A8A] leading-relaxed">{subtitle}</div>}
+      </div>
+    </div>
+  );
 }
 
 function getMetricMeaning(metric: DashboardData['pilotMetrics'][number]) {
@@ -126,8 +200,11 @@ function getMetricMeaning(metric: DashboardData['pilotMetrics'][number]) {
 
 function formatCryptoPrice(value: number | null, symbol: string): string {
   if (value === null) return '--';
-  if (symbol === 'XRP' || symbol === 'BNB') {
-    return `$${value.toFixed(symbol === 'XRP' ? 4 : 2)}`;
+  if (symbol === 'XRP' || symbol === 'TRX' || symbol === 'DOGE') {
+    return `$${value.toFixed(4)}`;
+  }
+  if (symbol === 'BNB' || symbol === 'SOL' || symbol === 'HYPE') {
+    return `$${value.toFixed(2)}`;
   }
   if (value >= 1000) {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -165,6 +242,17 @@ function formatGenericValue(symbol: string, value: number | null) {
   }
 
   return value.toFixed(2);
+}
+
+function formatCryptoMetaDate(value: string | null) {
+  if (!value) return '--';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-');
+    return `${day}/${month}/${year.slice(2)}`;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '--';
+  return parsed.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
 // ─── Fear & Greed gauge ────────────────────────────────────────────────────────
@@ -310,7 +398,7 @@ function PriceCard({ metric, showMetricDates, isFavorite, onToggleFavorite }: { 
       <div className="text-[10px] text-[#666666] font-mono">
         {showMetricDates
           ? metric.latestDate
-            ? new Date(metric.latestDate).toLocaleDateString('tr-TR')
+            ? formatCryptoMetaDate(metric.latestDate)
             : 'Veri yok'
           : 'Tarih gizli'}
       </div>
@@ -353,6 +441,7 @@ function SignalCard({
   description,
   metric,
   showMetricDates,
+  showSparkline = false,
   isFavorite,
   onToggleFavorite,
 }: {
@@ -360,6 +449,7 @@ function SignalCard({
   description: string;
   metric?: DashboardData['pilotMetrics'][0];
   showMetricDates: boolean;
+  showSparkline?: boolean;
   isFavorite: boolean;
   onToggleFavorite: () => void;
 }) {
@@ -404,10 +494,20 @@ function SignalCard({
             <div className="text-2xl font-mono tabular-nums text-[#E5E5E5] mb-2">
               {formatGenericValue(metric.symbol, metric.value)}
             </div>
+            {showSparkline && metric.history.length > 1 && (
+              <div className="h-12 -mx-1 mb-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metric.history}>
+                    <YAxis domain={['dataMin', 'dataMax']} hide />
+                    <Line type="monotone" dataKey="value" stroke={tc} strokeWidth={1.4} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
             <div className="text-[10px] text-[#666666] font-mono">
               {showMetricDates
-                ? metric.latestDate
-                  ? new Date(metric.latestDate).toLocaleDateString('tr-TR')
+                ? (metric.latestUpdatedAt ?? metric.latestDate)
+                  ? formatCryptoMetaDate(metric.latestUpdatedAt ?? metric.latestDate!)
                   : 'Veri yok'
                 : 'Tarih gizli'}
             </div>
@@ -428,6 +528,7 @@ function SectionBlock({
   subtitle,
   items,
   showMetricDates,
+  showSparkline = false,
   watchlist,
   onToggleFavorite,
 }: {
@@ -435,17 +536,13 @@ function SectionBlock({
   subtitle: string;
   items: Array<{ key: string; label: string; description: string; metric?: DashboardData['pilotMetrics'][0] }>;
   showMetricDates: boolean;
+  showSparkline?: boolean;
   watchlist: { symbol: string }[];
   onToggleFavorite: (metric: DashboardData['pilotMetrics'][number]) => void;
 }) {
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-3">
-        <div>
-          <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-1">{title}</div>
-          <div className="text-xs text-[#666666] leading-relaxed">{subtitle}</div>
-        </div>
-      </div>
+      <CryptoSectionHeader title={title} subtitle={subtitle} />
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {items.map((item) => (
           <div key={item.key}>
@@ -454,6 +551,7 @@ function SectionBlock({
               description={item.description}
               metric={item.metric}
               showMetricDates={showMetricDates}
+              showSparkline={showSparkline}
               isFavorite={item.metric ? watchlist.some((w) => w.symbol === item.metric!.symbol) : false}
               onToggleFavorite={() => item.metric && onToggleFavorite(item.metric)}
             />
@@ -476,6 +574,7 @@ export function CryptoPage({
   showLegalNote,
   watchlist,
   onToggleFavorite,
+  summaryCards = [],
 }: CryptoPageProps) {
   const [fearGreedData, setFearGreedData] = useState<{
     value: number;
@@ -509,9 +608,13 @@ export function CryptoPage({
     })();
   }, []);
 
-  const priceMetrics   = pilotMetrics.filter((m) => COIN_META[m.symbol]);
-  const marketMetrics  = pilotMetrics.filter((m) => MARKET_META[m.symbol]);
   const metricMap = new Map(pilotMetrics.map((metric) => [metric.symbol, metric]));
+  const priceMetrics = Object.keys(COIN_META)
+    .map((symbol) => metricMap.get(symbol))
+    .filter((metric): metric is DashboardData['pilotMetrics'][0] => Boolean(metric));
+  const marketMetrics = Object.keys(MARKET_META)
+    .map((symbol) => metricMap.get(symbol))
+    .filter((metric): metric is DashboardData['pilotMetrics'][0] => Boolean(metric));
   const structureItems = Object.entries(STRUCTURE_META).map(([key, meta]) => ({
     key,
     label: meta.label,
@@ -546,7 +649,7 @@ export function CryptoPage({
   const fetchedMetrics = pilotMetrics.filter((metric) => metric.value !== null).length;
   const coverageRatio = pilotMetrics.length > 0 ? Math.round((fetchedMetrics / pilotMetrics.length) * 100) : 0;
   const lastUpdate = pilotMetrics
-    .map((metric) => metric.latestDate)
+    .map((metric) => metric.latestUpdatedAt ?? metric.latestDate)
     .filter((value): value is string => Boolean(value))
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
   const aiReliability = confidenceClamp ?? (coverageRatio >= 85 ? 4 : coverageRatio >= 65 ? 3 : coverageRatio >= 40 ? 2 : 1);
@@ -564,52 +667,61 @@ export function CryptoPage({
     <div className="space-y-6">
 
       {/* ── Section 1: AI Yorum ── */}
-      <div className="bg-[#111111] border border-[#1F1F1F] p-4 rounded-sm">
-        <div className="flex items-start gap-3 mb-3">
-          <div
-            className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${
-              aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#666666]'
-            }`}
-          />
-          <div className="text-sm font-semibold text-[#E5E5E5] tracking-wide">
-            MERGEN AI — Kripto Para Piyasaları Analizi
+      <div
+        className="relative rounded-sm border border-[#1A2E1A] overflow-hidden p-5"
+        style={{
+          background: 'linear-gradient(135deg, #0A1A0F 0%, #111111 55%, #0D1119 100%)',
+          boxShadow: '0 0 0 1px rgba(74,222,128,0.05) inset, 0 16px 40px rgba(74,222,128,0.04)',
+        }}
+      >
+        <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #4ADE80 30%, #34D399 65%, transparent)' }} />
+
+        <div className="flex items-start gap-3 mb-4">
+          <div className="flex-shrink-0 mt-0.5">
+            <div
+              className={`w-2 h-2 rounded-full ${aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#444444]'}`}
+              style={{ boxShadow: aiInsight ? '0 0 6px #4ADE80' : 'none' }}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#4ADE80] mb-1.5">MERGEN AI · Analiz</div>
+            <div className="text-[15px] font-bold text-[#E5E5E5] leading-snug">Kripto Para Piyasaları</div>
           </div>
           {confidenceClamp !== null && (
-            <div className="ml-auto flex items-center gap-3 border border-[#1F1F1F] bg-[#0D0D0D] px-3 py-2 rounded-sm">
-              <div className="text-sm font-semibold text-[#E5E5E5] whitespace-nowrap">
-                Güven {confidenceClamp}/5
-              </div>
-              <div className="flex items-center gap-1">
+            <div className="flex-shrink-0 flex items-center gap-2 border border-[#1A2E1A] bg-[#0A1A0F] px-3 py-2 rounded-sm">
+              <span className="text-[11px] font-mono text-[#4ADE80] whitespace-nowrap">Güven {confidenceClamp}/5</span>
+              <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className={`h-2.5 w-5 rounded-[2px] border ${
-                      i < confidenceClamp
-                        ? 'border-[#4ADE80] bg-[#4ADE80]'
-                        : 'border-[#2A2A2A] bg-transparent'
-                    }`}
+                    className="h-2 w-4 rounded-[2px]"
+                    style={{
+                      background: i < confidenceClamp ? '#4ADE80' : '#1A2A1A',
+                      boxShadow: i < confidenceClamp ? '0 0 4px rgba(74,222,128,0.5)' : 'none',
+                    }}
                   />
                 ))}
               </div>
             </div>
           )}
         </div>
+
+        <div className="border-t border-[#1A2E1A] mb-4" />
+
         {aiInsight ? (
           <>
-            <div className="text-sm text-[#E5E5E5] leading-relaxed">{aiInsight}</div>
+            <div className="text-[13px] text-[#D4D4D4] leading-relaxed">{aiInsight}</div>
             {aiSimpleSummary && (
-              <div className="mt-4 pt-4 border-t border-[#1F1F1F]">
-                <div className="text-[10px] text-[#A3A3A3] uppercase tracking-wider mb-2">
-                  Sade Özet
-                </div>
-                <div className="text-sm text-[#D4D4D4] leading-relaxed">{aiSimpleSummary}</div>
+              <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
+                <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">Sade Özet</div>
+                <div className="text-[13px] text-[#AAAAAA] leading-relaxed">{aiSimpleSummary}</div>
               </div>
             )}
           </>
         ) : (
-          <div className="text-sm text-[#666666] leading-relaxed">
+          <div className="text-[13px] text-[#555555] leading-relaxed italic">
             Bu kategori için henüz AI yorumu oluşmadı. Sağ üstteki{' '}
-            <span className="text-[#A3A3A3]">AI Prompt</span> butonuyla üretilebilir.
+            <span className="text-[#777777] not-italic">AI Prompt</span> butonuyla üretilebilir.
           </div>
         )}
       </div>
@@ -628,17 +740,31 @@ export function CryptoPage({
         <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] px-4 py-3">
           <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Son güncelleme</div>
           <div className="text-sm text-[#E5E5E5] font-mono tabular-nums">
-            {lastUpdate ? new Date(lastUpdate).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '--'}
+            {lastUpdate ? formatCryptoMetaDate(lastUpdate) : '--'}
           </div>
           <div className="text-xs text-[#666666] mt-1">Kategori içindeki en güncel veri zamanı</div>
         </div>
       </div>
 
+      {/* ── Sinyal Özet Kartları ── */}
+      {summaryCards.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {summaryCards.map((item) => (
+            <div key={item.key} className={`rounded-sm border px-4 py-3 ${item.tone}`}>
+              <div className="text-[10px] uppercase tracking-wider opacity-80 mb-2">{item.label}</div>
+              <div className="text-sm font-medium text-[#F5F5F5] leading-snug">{item.title}</div>
+              <div className="mt-2 text-xs text-[#A3A3A3] leading-relaxed">{item.note}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Section 2: Ana Kripto Varlıkları ── */}
       <div>
-        <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-3">
-          Ana Kripto Varlıkları
-        </div>
+        <CryptoSectionHeader
+          title="Ana Kripto Varlıkları"
+          subtitle="Bitcoin, Ethereum ve ana piyasa liderlerinin fiyat davranisini ve guc dagilimini hizli okumak icin."
+        />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {priceMetrics.map((m) => (
             <div key={m.id}>
@@ -658,7 +784,7 @@ export function CryptoPage({
 
         {/* Fear & Greed */}
         <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-          <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-4">
+          <div className="mb-4 inline-flex items-center rounded-sm border border-[#1E1E1E] bg-[#090909] px-3 py-1.5 text-[11px] text-[#E5E5E5] uppercase tracking-wider shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             Duyarlılık ve Perakende İlgi
           </div>
         <div className="grid grid-cols-1 gap-4 mb-4">
@@ -692,7 +818,7 @@ export function CryptoPage({
 
         {/* Market barometers */}
         <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-          <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-4">
+          <div className="mb-4 inline-flex items-center rounded-sm border border-[#1E1E1E] bg-[#090909] px-3 py-1.5 text-[11px] text-[#E5E5E5] uppercase tracking-wider shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             Kurumsal ve Şirket Barometreleri
           </div>
           <div className="space-y-3">
@@ -706,11 +832,13 @@ export function CryptoPage({
             )}
           </div>
           <div className="mt-4 pt-3 border-t border-[#1F1F1F]">
-            <div className="text-[10px] text-[#666666] leading-relaxed">
-              <span className="text-[#A3A3A3] font-medium">COIN</span> kurumsal kripto
-              adaptasyonunun en likit borsası barometresidir.{' '}
-              <span className="text-[#A3A3A3] font-medium">MSTR</span> kaldıraçlı BTC
-              pozisyonu nedeniyle volatilite amplifikatörü gibi davranır.
+            <div className="rounded-sm border border-[#1A1A1A] bg-[#101010] px-3 py-2.5 text-[11px] text-[#8F8F8F] leading-6">
+              <span className="text-[#E5E5E5] font-semibold">COIN</span>{' '}
+              kurumsal kripto adaptasyonunun en likit borsa barometresidir.{' '}
+              <span className="text-[#E5E5E5] font-semibold">MSTR</span>{' '}
+              kaldiracli BTC pozisyonu nedeniyle volatilite amplifikatoru gibi davranir.{' '}
+              <span className="text-[#E5E5E5] font-semibold">CRCL</span>{' '}
+              ise stablecoin altyapisi ve regule kripto finansinin kurumsal benimsenme tarafini yansitir.
             </div>
           </div>
         </div>
@@ -722,6 +850,7 @@ export function CryptoPage({
         subtitle="Piyasanın Bitcoin merkezli mi, altcoin odaklı mı, yoksa savunmacı stablecoin tarafına mı kaydığını anlamak için."
         items={structureItems}
         showMetricDates={showMetricDates}
+        showSparkline
         watchlist={watchlist}
         onToggleFavorite={onToggleFavorite}
       />
@@ -757,9 +886,10 @@ export function CryptoPage({
 
       {/* ── Section 7: Makro Korelasyon Çerçevesi ── */}
       <div>
-        <div className="text-[11px] text-[#A3A3A3] uppercase tracking-wider mb-3">
-          Makro Korelasyon Çerçevesi
-        </div>
+        <CryptoSectionHeader
+          title="Makro Korelasyon Çerçevesi"
+          subtitle="Kripto varliklarin dolar, faiz, altin ve risk istahi ile kurdugu iliskiyi daha net gormek icin."
+        />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {MACRO_CORRELATIONS.map((corr) => (
             <div key={corr.title} className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">

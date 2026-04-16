@@ -196,6 +196,16 @@ VALUES
     0.8
   ),
   (
+    '41000000-0000-0000-0000-000000000024',
+    '30000000-0000-0000-0000-000000000011',
+    'Social Dominance / Social Mentions',
+    'SOCIAL_DOMINANCE_SCORE',
+    'CRYPTO_API',
+    'Bitcoin etrafindaki sosyal gorunurluk, mention yogunlugu ve topluluk ilgisinin bilesik skorunu temsil eder.',
+    false,
+    0.9
+  ),
+  (
     '41000000-0000-0000-0000-000000000019',
     '30000000-0000-0000-0000-000000000011',
     'Circle Internet Group',
@@ -204,6 +214,46 @@ VALUES
     'Circle hissesi. Stablecoin altyapisinin ve regule edilmis dolar token anlatısının halka acik sirket barometresi.',
     false,
     1.0
+  ),
+  (
+    '41000000-0000-0000-0000-000000000020',
+    '30000000-0000-0000-0000-000000000011',
+    'Solana Fiyatı (USD)',
+    'SOL',
+    'YAHOO',
+    'Solana spot fiyati. Yuksek hizli zincir aktivitesi, perakende akisi ve on-chain uygulama genisliginin proxy gostergesidir.',
+    false,
+    1.2
+  ),
+  (
+    '41000000-0000-0000-0000-000000000021',
+    '30000000-0000-0000-0000-000000000011',
+    'TRON Fiyatı (USD)',
+    'TRX',
+    'YAHOO',
+    'TRON spot fiyati. Stablecoin transfer omurgasi ve dusuk maliyetli zincir kullanim yogunlugunun gostergesidir.',
+    false,
+    0.9
+  ),
+  (
+    '41000000-0000-0000-0000-000000000022',
+    '30000000-0000-0000-0000-000000000011',
+    'Dogecoin Fiyatı (USD)',
+    'DOGE',
+    'YAHOO',
+    'Dogecoin spot fiyati. Perakende spekulasyon, meme-anlati hizi ve risk istahi tasmasinin proxy gostergesidir.',
+    false,
+    0.8
+  ),
+  (
+    '41000000-0000-0000-0000-000000000023',
+    '30000000-0000-0000-0000-000000000011',
+    'Hyperliquid Fiyatı (USD)',
+    'HYPE',
+    'YAHOO',
+    'HYPE spot fiyati. Yeni nesil on-chain trade altyapisi ve decentralize perpetual ekosistemi ilgisinin gostergesidir.',
+    false,
+    0.8
   )
 ON CONFLICT (symbol) DO UPDATE SET
   category_id = EXCLUDED.category_id,

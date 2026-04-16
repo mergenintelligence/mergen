@@ -18,6 +18,7 @@ import { CryptoPage } from './components/CryptoPage';
 import { PredictionMarketsPage } from './components/PredictionMarketsPage';
 import { NewsPage } from './components/NewsPage';
 import { DirectionCard, HomePage } from './components/HomePage';
+import { WeeklyReportsPage } from './components/WeeklyReportsPage';
 
 const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
 const PREDICTION_CATEGORY_ID = '30000000-0000-0000-0000-000000000012';
@@ -25,6 +26,7 @@ const ALERTS_SECTION_ID = 'alerts';
 const DIVERGENCES_SECTION_ID = 'divergences';
 const SETTINGS_SECTION_ID = 'settings';
 const COOLDOWN_SECTION_ID = 'cooldown';
+const WEEKLY_REPORTS_SECTION_ID = 'weekly-reports';
 const APP_SETTINGS_KEY = 'mergen-ui-settings';
 
 const PLACEHOLDERS: Record<string, string> = {
@@ -47,7 +49,7 @@ const PLACEHOLDERS: Record<string, string> = {
   '30000000-0000-0000-0000-000000000017': 'Küresel Ticaret ve Tedarik Zinciri',
 };
 const NEWS_SECTION_ID = 'news';
-const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID] as const;
+const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID, WEEKLY_REPORTS_SECTION_ID] as const;
 
 type AppSettings = {
   theme: 'dark' | 'graphite' | 'light';
@@ -114,8 +116,9 @@ const CATEGORY_GROUPS: Record<string, MetricGroup[]> = {
     { title: 'Kurumsal Akış', description: 'Büyük oyuncuların sessiz birikimi ve yoğunlaşma davranışı.', symbols: ['DARK_POOL_BUY_VOLUME', 'WHALE_13F_CONCENTRATION'] },
   ],
   '30000000-0000-0000-0000-000000000005': [
-    { title: 'Ana Metaller', description: 'Altın, gümüş ve platin grubunun doğrudan fiyat davranışı.', symbols: ['GLD', 'SLV', 'PPLT', 'PALL', 'GOLD_SILVER_INDEX'] },
-    { title: 'Makro Oranlar', description: 'Reel faizler, riskli varlıklar, enerji ve metal ayrışmasıyla kurulan makro ilişki.', symbols: ['GOLD_REAL_RATE_SIGNAL', 'GOLD_SPY_RATIO', 'GOLD_OIL_RATIO', 'GOLD_SILVER_RATIO_PM'] },
+    { title: 'Ana Metaller', description: 'Altın, gümüş, platin grubu ve nadir değerli metallerin doğrudan ons fiyat davranışı.', symbols: ['GOLD_SPOT_PM', 'SILVER_SPOT_PM', 'PLATINUM_SPOT_PM', 'PALLADIUM_SPOT_PM', 'RHODIUM_SPOT', 'IRIDIUM_SPOT', 'RUTHENIUM_SPOT', 'OSMIUM_SPOT'] },
+    { title: 'Metal Oranları ve Kompozitler', description: 'Metal sepeti içindeki güç dengesi ve altın-gümüş rejim ayrışmasını özetleyen bileşik yapı.', symbols: ['GOLD_SILVER_INDEX', 'GOLD_SILVER_RATIO_PM'] },
+    { title: 'Makro Oranlar', description: 'Reel faizler, riskli varlıklar ve enerji ile kurulan makro değerli metal ilişkisi.', symbols: ['GOLD_REAL_RATE_SIGNAL', 'GOLD_SPY_RATIO', 'GOLD_OIL_RATIO'] },
     { title: 'Madenciler ve Pozisyonlama', description: 'Madenci hisseleri ve hedge fonlarının yönelimi.', symbols: ['GDX', 'SIL', 'COT_NET_SPEC_POSITION'] },
     { title: 'Fiziksel Talep ve Arz', description: 'Merkez bankası talebi, teslimat stoku ve fiziki arbitraj sinyali.', symbols: ['CENTRAL_BANK_GOLD_BUYING', 'COMEX_REGISTERED_STOCKS', 'US_MINT_BULLION_SALES', 'PHYSICAL_SILVER_PREMIUM', 'SHANGHAI_LONDON_GOLD_PREMIUM', 'INDIA_GOLD_IMPORT_VOLUME'] },
   ],
@@ -289,6 +292,11 @@ function formatAlertTimestamp(value: string | null) {
 
 function formatLastUpdateLabel(value: string | null) {
   if (!value) return '--';
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-');
+    return `${day}/${month}/${year.slice(2)}`;
+  }
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '--';
@@ -720,7 +728,17 @@ export default function App() {
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [watchlist, setWatchlist] = useState<FavoriteMetric[]>([]);
+  const [watchlist, setWatchlist] = useState<FavoriteMetric[]>(() => {
+    try {
+      if (typeof window === 'undefined') return [];
+      const stored = window.localStorage.getItem(WATCHLIST_STORAGE_KEY);
+      if (!stored) return [];
+      const parsed = JSON.parse(stored) as FavoriteMetric[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedCategoryId, setSelectedCategoryId] = useState(() => {
     if (typeof window === 'undefined') return 'home';
     const hash = window.location.hash.replace(/^#/, '').trim();
@@ -830,6 +848,7 @@ export default function App() {
     : 0;
   const selectedLastUpdate = selectedCategoryMetrics
     .flatMap((metric) => [
+      metric.latestUpdatedAt,
       metric.latestDate,
       ...metric.history.map((point) => point.date),
     ])
@@ -901,17 +920,6 @@ export default function App() {
       });
     } catch {
       setSettings(DEFAULT_SETTINGS);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(WATCHLIST_STORAGE_KEY);
-      if (!stored) return;
-      const parsed = JSON.parse(stored) as FavoriteMetric[];
-      setWatchlist(Array.isArray(parsed) ? parsed : []);
-    } catch {
-      setWatchlist([]);
     }
   }, []);
 
@@ -1174,7 +1182,7 @@ export default function App() {
             </div>
           )}
 
-          {selectedCategoryId !== 'home' && (
+          {selectedCategoryId !== 'home' && selectedCategoryId !== WEEKLY_REPORTS_SECTION_ID && (
             <div className="flex-1 min-w-0 flex">
               <div
                 className={`relative flex-1 overflow-hidden rounded-sm border ${getScoreTone(topPanelScore).border} px-5 py-4 bg-[#111111]`}
@@ -1216,7 +1224,13 @@ export default function App() {
             totalFetchedMetrics={totalFetchedMetrics}
             totalTrackedMetrics={totalTrackedMetrics}
             showDirectionCard={false}
+            watchlist={watchlist}
+            onRemoveFromWatchlist={(symbol) =>
+              setWatchlist((cur) => cur.filter((item) => item.symbol !== symbol))
+            }
           />
+        ) : selectedCategoryId === WEEKLY_REPORTS_SECTION_ID ? (
+          <WeeklyReportsPage />
         ) : selectedCategoryId === NEWS_SECTION_ID ? (
           <NewsPage
             news={data?.news ?? { critical: [], daily: [], other: [] }}
@@ -1526,6 +1540,7 @@ export default function App() {
             showLegalNote={settings.showLegalNote}
             watchlist={watchlist}
             onToggleFavorite={toggleFavoriteMetric}
+            summaryCards={categorySummaryCards}
           />
           )
         ) : selectedCategoryId === PREDICTION_CATEGORY_ID ? (
@@ -1542,6 +1557,7 @@ export default function App() {
               showLegalNote={settings.showLegalNote}
               watchlist={watchlist}
               onToggleFavorite={toggleFavoriteMetric}
+              summaryCards={categorySummaryCards}
             />
           )
         ) : (
@@ -1551,35 +1567,53 @@ export default function App() {
             ) : (
               <>
                 {/* AI Insight Card */}
-                <div className="bg-[#111111] border border-[#1F1F1F] p-4 rounded-sm mb-6">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${data?.aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#666666]'}`}></div>
-                    <div className="text-sm md:text-base font-semibold text-[#E5E5E5] tracking-wide leading-snug">
-                      MERGEN AI {data?.categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori'} Analizi
+                <div
+                  className="relative rounded-sm border border-[#1A2E1A] overflow-hidden p-5 mb-6"
+                  style={{
+                    background: 'linear-gradient(135deg, #0A1A0F 0%, #111111 55%, #0D1119 100%)',
+                    boxShadow: '0 0 0 1px rgba(74,222,128,0.05) inset, 0 16px 40px rgba(74,222,128,0.04)',
+                  }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #4ADE80 30%, #34D399 65%, transparent)' }} />
+
+                  <div className="flex items-start gap-3 mb-4">
+                    <div
+                      className="flex-shrink-0 mt-0.5 flex flex-col items-center gap-1"
+                    >
+                      <div className={`w-2 h-2 rounded-full ${data?.aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#444444]'}`} style={{ boxShadow: data?.aiInsight ? '0 0 6px #4ADE80' : 'none' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#4ADE80] mb-1.5">MERGEN AI · Analiz</div>
+                      <div className="text-[15px] font-bold text-[#E5E5E5] leading-snug">
+                        {data?.categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori'}
+                      </div>
                     </div>
                     {data?.aiConfidence !== null && data?.aiConfidence !== undefined && (
                       <ConfidenceBadge confidence={data.aiConfidence} />
                     )}
                   </div>
+
+                  <div className="border-t border-[#1A2E1A] mb-4" />
+
                   {data?.aiInsight ? (
                     <>
-                      <div className="text-sm text-[#E5E5E5] leading-relaxed">
+                      <div className="text-[13px] text-[#D4D4D4] leading-relaxed">
                         {data.aiInsight}
                       </div>
                       {data.aiSimpleSummary && (
-                        <div className="mt-4 pt-4 border-t border-[#1F1F1F]">
-                          <div className="text-[10px] text-[#A3A3A3] uppercase tracking-wider mb-2">
+                        <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
+                          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">
                             Sade Özet
                           </div>
-                          <div className="text-sm text-[#D4D4D4] leading-relaxed">
+                          <div className="text-[13px] text-[#AAAAAA] leading-relaxed">
                             {data.aiSimpleSummary}
                           </div>
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className="text-sm text-[#666666] leading-relaxed">
-                      Bu kategori icin henuz AI yorumu olusmadi. Gemini kotasi doluysa kart bos kalabilir. Daha sonra tekrar deneyiniz.
+                    <div className="text-[13px] text-[#555555] leading-relaxed italic">
+                      Bu kategori için henüz AI yorumu oluşmadı. Gemini kotası doluysa kart boş kalabilir. Daha sonra tekrar deneyiniz.
                     </div>
                   )}
                 </div>

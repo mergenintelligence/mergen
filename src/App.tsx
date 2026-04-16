@@ -500,6 +500,36 @@ function getGroupTone(title: string) {
       accent: '#7DD3FC',
     };
   }
+  if (lower.includes('kripto') || lower.includes('blokzincir') || lower.includes('on-chain')) {
+    return {
+      border: 'border-[#2A2240]',
+      bg: 'bg-[#0F0D18]',
+      softBg: 'bg-[#141022]',
+      glow: '0 0 0 1px rgba(167,139,250,0.05) inset',
+      icon: 'text-[#A78BFA]',
+      accent: '#A78BFA',
+    };
+  }
+  if (lower.includes('duyarlılık') || lower.includes('sentiment') || lower.includes('perakende')) {
+    return {
+      border: 'border-[#173625]',
+      bg: 'bg-[#0B130F]',
+      softBg: 'bg-[#0E1A13]',
+      glow: '0 0 0 1px rgba(74,222,128,0.05) inset',
+      icon: 'text-[#4ADE80]',
+      accent: '#4ADE80',
+    };
+  }
+  if (lower.includes('şirket') || lower.includes('kurumsal') || lower.includes('barometre')) {
+    return {
+      border: 'border-[#36214A]',
+      bg: 'bg-[#120D18]',
+      softBg: 'bg-[#171022]',
+      glow: '0 0 0 1px rgba(192,132,252,0.05) inset',
+      icon: 'text-[#C084FC]',
+      accent: '#C084FC',
+    };
+  }
   if (lower.includes('teknoloji') || lower.includes('ai') || lower.includes('hesaplama')) {
     return {
       border: 'border-[#173325]',
@@ -528,6 +558,76 @@ function getGroupTone(title: string) {
       glow: '0 0 0 1px rgba(253,186,116,0.04) inset',
       icon: 'text-[#FDBA74]',
       accent: '#FDBA74',
+    };
+  }
+  if (lower.includes('enerji') || lower.includes('petrol') || lower.includes('gaz')) {
+    return {
+      border: 'border-[#473210]',
+      bg: 'bg-[#171006]',
+      softBg: 'bg-[#1C1408]',
+      glow: '0 0 0 1px rgba(250,204,21,0.05) inset',
+      icon: 'text-[#FACC15]',
+      accent: '#FACC15',
+    };
+  }
+  if (lower.includes('enflasyon') || lower.includes('ücret') || lower.includes('fiyat')) {
+    return {
+      border: 'border-[#4A221C]',
+      bg: 'bg-[#170C0B]',
+      softBg: 'bg-[#1E100F]',
+      glow: '0 0 0 1px rgba(251,146,60,0.05) inset',
+      icon: 'text-[#FB923C]',
+      accent: '#FB923C',
+    };
+  }
+  if (lower.includes('konut') || lower.includes('gayrimenkul') || lower.includes('mortgage')) {
+    return {
+      border: 'border-[#1D3640]',
+      bg: 'bg-[#0B1114]',
+      softBg: 'bg-[#0E161A]',
+      glow: '0 0 0 1px rgba(94,234,212,0.05) inset',
+      icon: 'text-[#5EEAD4]',
+      accent: '#5EEAD4',
+    };
+  }
+  if (lower.includes('işgücü') || lower.includes('istihdam') || lower.includes('işsizlik')) {
+    return {
+      border: 'border-[#213A2E]',
+      bg: 'bg-[#0B120E]',
+      softBg: 'bg-[#101812]',
+      glow: '0 0 0 1px rgba(110,231,183,0.05) inset',
+      icon: 'text-[#6EE7B7]',
+      accent: '#6EE7B7',
+    };
+  }
+  if (lower.includes('ticaret') || lower.includes('tedarik') || lower.includes('lojistik')) {
+    return {
+      border: 'border-[#203547]',
+      bg: 'bg-[#0B1015]',
+      softBg: 'bg-[#0E141B]',
+      glow: '0 0 0 1px rgba(96,165,250,0.05) inset',
+      icon: 'text-[#60A5FA]',
+      accent: '#60A5FA',
+    };
+  }
+  if (lower.includes('volatilite') || lower.includes('opsiyon') || lower.includes('türev')) {
+    return {
+      border: 'border-[#3B2910]',
+      bg: 'bg-[#140F08]',
+      softBg: 'bg-[#19130A]',
+      glow: '0 0 0 1px rgba(251,191,36,0.05) inset',
+      icon: 'text-[#FBBF24]',
+      accent: '#FBBF24',
+    };
+  }
+  if (lower.includes('jeopolitik') || lower.includes('savaş') || lower.includes('çatışma')) {
+    return {
+      border: 'border-[#421D25]',
+      bg: 'bg-[#150B0E]',
+      softBg: 'bg-[#1A0F12]',
+      glow: '0 0 0 1px rgba(244,114,182,0.05) inset',
+      icon: 'text-[#F472B6]',
+      accent: '#F472B6',
     };
   }
   if (lower.includes('akım') || lower.includes('breadth') || lower.includes('genişliği')) {
@@ -1618,9 +1718,35 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm font-medium">
-                    {data?.categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori'} Metrikleri
+                <div
+                  className="relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
+                  style={{
+                    borderColor: '#2A2A2A',
+                    background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+                    boxShadow: '0 0 0 1px rgba(245,158,11,0.08) inset, 0 16px 34px rgba(245,158,11,0.08)',
+                  }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 50%, #FDE68A 100%)' }} />
+                  <div className="absolute -left-10 top-0 h-24 w-24 rounded-full blur-2xl pointer-events-none bg-[#F59E0B]/[0.08]" />
+                  <div className="absolute right-6 top-3 h-14 w-14 rounded-full blur-2xl pointer-events-none bg-[#FBBF24]/[0.10]" />
+                  <div className="relative">
+                    <div
+                      className="mb-2 inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
+                      style={{
+                        color: '#FBBF24',
+                        borderColor: 'rgba(251,191,36,0.25)',
+                        backgroundColor: 'rgba(251,191,36,0.12)',
+                        boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.08), 0 0 18px rgba(245,158,11,0.06)',
+                      }}
+                    >
+                      Veri Bölümü
+                    </div>
+                    <div className="text-sm font-medium text-[#F5F5F5]">
+                      {data?.categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori'} Metrikleri
+                    </div>
+                    <div className="mt-1 text-xs text-[#B0B0B0] leading-relaxed">
+                      Kategoriye ait ana metrikleri, kapsama düzeyini ve alt kırılımları bu bölümde birlikte okuyabilirsin.
+                    </div>
                   </div>
                 </div>
 
@@ -1661,10 +1787,18 @@ export default function App() {
                         <div
                           className={`relative mb-4 rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
                           style={{
-                            backgroundImage: `linear-gradient(135deg, ${tone.accent}14 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
-                            boxShadow: tone.glow,
+                            backgroundImage: `linear-gradient(135deg, ${tone.accent}26 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)`,
+                            boxShadow: `${tone.glow}, 0 16px 34px ${tone.accent}12`,
                           }}
                         >
+                          <div
+                            className="absolute -left-10 top-0 h-24 w-24 rounded-full blur-2xl pointer-events-none"
+                            style={{ backgroundColor: `${tone.accent}14` }}
+                          />
+                          <div
+                            className="absolute right-6 top-3 h-14 w-14 rounded-full blur-2xl pointer-events-none"
+                            style={{ backgroundColor: `${tone.accent}16` }}
+                          />
                           <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-sm" style={{ backgroundColor: tone.accent }}></div>
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
@@ -1675,9 +1809,19 @@ export default function App() {
                                 >
                                   {getGroupIcon(group.title)}
                                 </span>
-                                <span className="text-[#D4D4D4]">{group.title}</span>
+                                <span
+                                  className="inline-flex items-center rounded-sm border px-2.5 py-1 font-semibold"
+                                  style={{
+                                    color: tone.accent,
+                                    borderColor: `${tone.accent}40`,
+                                    backgroundColor: `${tone.accent}16`,
+                                    boxShadow: `inset 0 0 0 1px ${tone.accent}14, 0 0 18px ${tone.accent}10`,
+                                  }}
+                                >
+                                  {group.title}
+                                </span>
                               </div>
-                              <div className="text-xs text-[#8A8A8A] mt-1 leading-relaxed">
+                              <div className="text-xs text-[#A9A9A9] mt-2 leading-relaxed">
                                 {group.description}
                               </div>
                             </div>

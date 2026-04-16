@@ -20,6 +20,37 @@ const MARKET_META: Record<string, { label: string; description: string }> = {
   CRCL: { label: 'Circle (CRCL)', description: 'Stablecoin altyapısı ve regüle kripto finansı barometresi' },
 };
 
+const CRYPTO_HEATMAP_WEIGHTS: Record<string, number> = {
+  BTCUSD: 36,
+  ETH: 28,
+  SOL: 14,
+  XRP: 8,
+  BNB: 7,
+  TRX: 4,
+  DOGE: 4,
+  HYPE: 3,
+};
+
+const CRYPTO_HEATMAP_LAYOUT: Record<string, string> = {
+  BTCUSD: 'col-span-7 row-span-4',
+  ETH: 'col-span-5 row-span-3',
+  SOL: 'col-span-3 row-span-2',
+  XRP: 'col-span-2 row-span-2',
+  BNB: 'col-span-2 row-span-1',
+  TRX: 'col-span-2 row-span-1',
+  DOGE: 'col-span-1 row-span-1',
+  HYPE: 'col-span-2 row-span-1',
+};
+
+type CryptoHeatmapMode = 'weight' | 'change' | 'momentum' | 'price';
+
+const CRYPTO_HEATMAP_MODES: Array<{ id: CryptoHeatmapMode; label: string }> = [
+  { id: 'weight', label: 'Ağırlık' },
+  { id: 'change', label: 'Chg%' },
+  { id: 'momentum', label: 'Momentum' },
+  { id: 'price', label: 'Fiyat' },
+];
+
 const STRUCTURE_META: Record<string, { label: string; description: string }> = {
   'BTC.D': { label: 'BTC Dominance', description: 'Piyasanın ne kadarının Bitcoin merkezli toplandığını gösterir.' },
   'USDT.D': { label: 'Stablecoin Dominance', description: 'Likiditenin riskli coinlerden nakde/stablecoinlere kaçışını izler.' },
@@ -100,6 +131,51 @@ interface CryptoPageProps {
 function getCryptoSectionTone(title: string) {
   const lower = title.toLowerCase();
 
+  if (lower.includes('ısı haritası') || lower.includes('isi haritasi') || lower.includes('isı haritası') || lower.includes('heatmap')) {
+    return {
+      border: 'border-[#2B4C72]',
+      bg: 'bg-[#0B1520]',
+      accent: '#60A5FA',
+      shadow: '0 0 0 1px rgba(96,165,250,0.10) inset, 0 16px 34px rgba(37,99,235,0.10)',
+    };
+  }
+
+  if (lower.includes('ana kripto')) {
+    return {
+      border: 'border-[#3B3116]',
+      bg: 'bg-[#141108]',
+      accent: '#FBBF24',
+      shadow: '0 0 0 1px rgba(251,191,36,0.05) inset, 0 14px 30px rgba(251,191,36,0.05)',
+    };
+  }
+
+  if (lower.includes('duyarlılık') || lower.includes('perakende')) {
+    return {
+      border: 'border-[#173325]',
+      bg: 'bg-[#0B120F]',
+      accent: '#4ADE80',
+      shadow: '0 0 0 1px rgba(74,222,128,0.05) inset, 0 14px 30px rgba(74,222,128,0.05)',
+    };
+  }
+
+  if (lower.includes('kurumsal') || lower.includes('şirket')) {
+    return {
+      border: 'border-[#31233E]',
+      bg: 'bg-[#120D18]',
+      accent: '#C084FC',
+      shadow: '0 0 0 1px rgba(192,132,252,0.05) inset, 0 14px 30px rgba(192,132,252,0.05)',
+    };
+  }
+
+  if (lower.includes('lider') || lower.includes('ana varlık')) {
+    return {
+      border: 'border-[#3A2D12]',
+      bg: 'bg-[#141008]',
+      accent: '#FBBF24',
+      shadow: '0 0 0 1px rgba(251,191,36,0.05) inset, 0 14px 30px rgba(251,191,36,0.05)',
+    };
+  }
+
   if (lower.includes('breadth') || lower.includes('yapı')) {
     return {
       border: 'border-[#18313C]',
@@ -127,11 +203,59 @@ function getCryptoSectionTone(title: string) {
     };
   }
 
+  if (lower.includes('on-chain')) {
+    return {
+      border: 'border-[#2B233E]',
+      bg: 'bg-[#100D18]',
+      accent: '#A78BFA',
+      shadow: '0 0 0 1px rgba(167,139,250,0.05) inset, 0 14px 30px rgba(167,139,250,0.05)',
+    };
+  }
+
+  if (lower.includes('makro korelasyon')) {
+    return {
+      border: 'border-[#3C2A16]',
+      bg: 'bg-[#151009]',
+      accent: '#F59E0B',
+      shadow: '0 0 0 1px rgba(245,158,11,0.05) inset, 0 14px 30px rgba(245,158,11,0.05)',
+    };
+  }
+
   return {
     border: 'border-[#2A2A2A]',
     bg: 'bg-[#111111]',
     accent: '#A3A3A3',
     shadow: '0 0 0 1px rgba(163,163,163,0.04) inset',
+  };
+}
+
+function getHeatmapSummaryTone(kind: 'leader' | 'positive' | 'negative') {
+  if (kind === 'leader') {
+    return {
+      border: 'border-[#3A2D12]',
+      bg: 'bg-[#151008]',
+      accent: '#FBBF24',
+      label: 'text-[#D6B76A]',
+      value: 'text-[#F8E7B0]',
+    };
+  }
+
+  if (kind === 'positive') {
+    return {
+      border: 'border-[#183722]',
+      bg: 'bg-[#0B1510]',
+      accent: '#4ADE80',
+      label: 'text-[#8EE6AB]',
+      value: 'text-[#BBF7D0]',
+    };
+  }
+
+  return {
+    border: 'border-[#3B1C1C]',
+    bg: 'bg-[#170D0D]',
+    accent: '#F87171',
+    label: 'text-[#F2A4A4]',
+    value: 'text-[#FECACA]',
   };
 }
 
@@ -143,21 +267,118 @@ function CryptoSectionHeader({
   subtitle?: string;
 }) {
   const tone = getCryptoSectionTone(title);
+  const lowerTitle = title.toLowerCase();
+  const isHeatmap =
+    lowerTitle.includes('ısı haritası')
+    || lowerTitle.includes('isi haritasi')
+    || lowerTitle.includes('isı haritası')
+    || lowerTitle.includes('heatmap');
+  const accentRgb = tone.accent === '#60A5FA'
+    ? '96,165,250'
+    : tone.accent === '#FBBF24'
+      ? '251,191,36'
+      : tone.accent === '#4ADE80'
+        ? '74,222,128'
+        : tone.accent === '#C084FC'
+          ? '192,132,252'
+          : tone.accent === '#67E8F9'
+            ? '103,232,249'
+            : tone.accent === '#86EFAC'
+              ? '134,239,172'
+              : tone.accent === '#A78BFA'
+                ? '167,139,250'
+                : tone.accent === '#F59E0B'
+                  ? '245,158,11'
+                  : '163,163,163';
+  const headerStyle = {
+    borderColor: isHeatmap ? '#2F5D92' : undefined,
+    backgroundColor: undefined,
+    backgroundImage: `linear-gradient(135deg, rgba(${accentRgb}, ${isHeatmap ? '0.22' : '0.16'}) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)`,
+    boxShadow: `0 0 0 1px rgba(${accentRgb}, ${isHeatmap ? '0.12' : '0.08'}) inset, 0 16px 34px rgba(${accentRgb}, ${isHeatmap ? '0.10' : '0.07'})`,
+  } as const;
 
   return (
     <div
       className={`relative mb-4 overflow-hidden rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
-      style={{ boxShadow: tone.shadow }}
+      style={headerStyle}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: tone.accent }} />
+      <div
+        className="absolute inset-x-0 top-0 h-[2px]"
+        style={{ background: isHeatmap ? 'linear-gradient(90deg, #1D4ED8 0%, #60A5FA 40%, #93C5FD 100%)' : tone.accent }}
+      />
+      {isHeatmap && (
+        <>
+          <div className="absolute -left-10 top-0 h-24 w-24 rounded-full bg-[#60A5FA]/[0.08] blur-2xl pointer-events-none" />
+          <div className="absolute right-6 top-3 h-14 w-14 rounded-full bg-[#1D4ED8]/[0.10] blur-2xl pointer-events-none" />
+        </>
+      )}
+      {!isHeatmap && (
+        <>
+          <div
+            className="absolute -left-10 top-0 h-24 w-24 rounded-full blur-2xl pointer-events-none"
+            style={{ backgroundColor: `rgba(${accentRgb},0.07)` }}
+          />
+          <div
+            className="absolute right-6 top-3 h-14 w-14 rounded-full blur-2xl pointer-events-none"
+            style={{ backgroundColor: `rgba(${accentRgb},0.08)` }}
+          />
+        </>
+      )}
       <div>
         <div
           className="mb-2 inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
-          style={{ color: tone.accent, borderColor: `${tone.accent}33`, backgroundColor: `${tone.accent}12` }}
+          style={{
+            color: tone.accent,
+            borderColor: isHeatmap ? '#60A5FA55' : `${tone.accent}40`,
+            backgroundColor: isHeatmap ? 'rgba(96,165,250,0.16)' : `rgba(${accentRgb},0.16)`,
+            boxShadow: `inset 0 0 0 1px rgba(${accentRgb},0.10), 0 0 18px rgba(${accentRgb},${isHeatmap ? '0.08' : '0.06'})`,
+          }}
         >
           {title}
         </div>
-        {subtitle && <div className="text-xs text-[#8A8A8A] leading-relaxed">{subtitle}</div>}
+        {subtitle && (
+          <div className="text-xs leading-relaxed" style={{ color: isHeatmap ? '#B6CAE3' : '#A9A9A9' }}>
+            {subtitle}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CryptoMetricsHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div
+      className="relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
+      style={{
+        borderColor: '#2A2A2A',
+        background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+        boxShadow: '0 0 0 1px rgba(245,158,11,0.08) inset, 0 16px 34px rgba(245,158,11,0.08)',
+      }}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 50%, #FDE68A 100%)' }} />
+      <div className="absolute -left-10 top-0 h-24 w-24 rounded-full blur-2xl pointer-events-none bg-[#F59E0B]/[0.08]" />
+      <div className="absolute right-6 top-3 h-14 w-14 rounded-full blur-2xl pointer-events-none bg-[#FBBF24]/[0.10]" />
+      <div className="relative">
+        <div
+          className="mb-2 inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
+          style={{
+            color: '#FBBF24',
+            borderColor: 'rgba(251,191,36,0.25)',
+            backgroundColor: 'rgba(251,191,36,0.12)',
+            boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.08), 0 0 18px rgba(245,158,11,0.06)',
+          }}
+        >
+          Veri Bölümü
+        </div>
+        <div className="text-sm font-medium text-[#F5F5F5]">{title}</div>
+        <div className="mt-1 text-xs text-[#B0B0B0] leading-relaxed">{description}</div>
       </div>
     </div>
   );
@@ -253,6 +474,349 @@ function formatCryptoMetaDate(value: string | null) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '--';
   return parsed.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function getHeatmapTileColor(mode: CryptoHeatmapMode, metric: DashboardData['pilotMetrics'][number]) {
+  const change = metric.changePct ?? 0;
+  const intensity = Math.min(1, Math.abs(change) / 8);
+
+  if (mode === 'weight') {
+    return {
+      background: `linear-gradient(135deg, rgba(22,163,74,${0.24 + intensity * 0.14}) 0%, rgba(34,197,94,${0.48 + intensity * 0.18}) 100%)`,
+      border: change >= 0 ? '#2F8F52' : '#3A7750',
+      text: '#F3F4F6',
+      value: '#E5E7EB',
+    };
+  }
+
+  if (mode === 'price') {
+    const up = change >= 0;
+    return {
+      background: up
+        ? `linear-gradient(135deg, rgba(21,128,61,${0.28 + intensity * 0.16}) 0%, rgba(34,197,94,${0.40 + intensity * 0.18}) 100%)`
+        : `linear-gradient(135deg, rgba(127,29,29,${0.30 + intensity * 0.16}) 0%, rgba(239,68,68,${0.38 + intensity * 0.18}) 100%)`,
+      border: up ? '#2F8F52' : '#8F3A3A',
+      text: '#F3F4F6',
+      value: '#E5E7EB',
+    };
+  }
+
+  if (mode === 'momentum') {
+    const positive = change >= 0;
+    return {
+      background: positive
+        ? `linear-gradient(135deg, rgba(5,150,105,${0.28 + intensity * 0.14}) 0%, rgba(52,211,153,${0.42 + intensity * 0.16}) 100%)`
+        : `linear-gradient(135deg, rgba(153,27,27,${0.28 + intensity * 0.14}) 0%, rgba(248,113,113,${0.38 + intensity * 0.16}) 100%)`,
+      border: positive ? '#289A74' : '#A74B4B',
+      text: '#F3F4F6',
+      value: '#E5E7EB',
+    };
+  }
+
+  return {
+    background: change >= 0
+      ? `linear-gradient(135deg, rgba(22,163,74,${0.28 + intensity * 0.18}) 0%, rgba(74,222,128,${0.48 + intensity * 0.20}) 100%)`
+      : `linear-gradient(135deg, rgba(153,27,27,${0.30 + intensity * 0.18}) 0%, rgba(248,113,113,${0.44 + intensity * 0.20}) 100%)`,
+    border: change >= 0 ? '#2F8F52' : '#A74B4B',
+    text: '#F3F4F6',
+    value: '#F9FAFB',
+  };
+}
+
+function formatHeatmapValue(mode: CryptoHeatmapMode, metric: DashboardData['pilotMetrics'][number]) {
+  if (mode === 'change') {
+    if (metric.changePct === null) return 'veri yok';
+    const sign = (metric.change ?? 0) > 0 ? '+' : (metric.change ?? 0) < 0 ? '-' : '';
+    return `${sign}${Math.abs(metric.changePct).toFixed(2)}%`;
+  }
+
+  if (mode === 'momentum') {
+    const change = metric.changePct ?? 0;
+    if (change >= 3) return 'Güçlü Alım';
+    if (change >= 1) return 'Pozitif';
+    if (change <= -3) return 'Sert Satış';
+    if (change <= -1) return 'Zayıf';
+    return 'Dengeli';
+  }
+
+  if (mode === 'price') {
+    return formatCryptoPrice(metric.value, metric.symbol);
+  }
+
+  const weight = CRYPTO_HEATMAP_WEIGHTS[metric.symbol] ?? 1;
+  return `%${weight}`;
+}
+
+function CryptoHeatmapPanel({
+  metrics,
+}: {
+  metrics: DashboardData['pilotMetrics'];
+}) {
+  const [mode, setMode] = useState<CryptoHeatmapMode>('weight');
+  const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
+
+  const heatmapMetrics = metrics
+    .filter((metric) => metric.symbol in COIN_META)
+    .sort((a, b) => (CRYPTO_HEATMAP_WEIGHTS[b.symbol] ?? 0) - (CRYPTO_HEATMAP_WEIGHTS[a.symbol] ?? 0));
+
+  const topPositive = [...heatmapMetrics]
+    .filter((metric) => metric.changePct !== null)
+    .sort((a, b) => (b.changePct ?? 0) - (a.changePct ?? 0))[0];
+
+  const topNegative = [...heatmapMetrics]
+    .filter((metric) => metric.changePct !== null)
+    .sort((a, b) => (a.changePct ?? 0) - (b.changePct ?? 0))[0];
+
+  const dominantCoin = heatmapMetrics[0] ?? null;
+  const activeMetric = heatmapMetrics.find((metric) => metric.symbol === activeSymbol) ?? dominantCoin;
+
+  if (heatmapMetrics.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <CryptoSectionHeader
+        title="Kripto Isı Haritası"
+        subtitle="Ana coinlerde ağırlık, günlük değişim, momentum ve fiyat dağılımını tek bakışta izlemek için."
+      />
+
+      <div
+        className="rounded-sm border border-[#223043] bg-[#0C0C0C] p-4"
+        style={{
+          backgroundImage: 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, transparent 24%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)',
+          boxShadow: 'inset 0 0 0 1px rgba(96,165,250,0.05)',
+        }}
+      >
+        <div className="mb-4 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-4 items-stretch">
+          <div
+            className="rounded-sm border border-[#213040] bg-[#0F1114] p-3"
+            style={{
+              backgroundImage: 'linear-gradient(135deg, rgba(96,165,250,0.08) 0%, transparent 28%)',
+              boxShadow: 'inset 0 0 0 1px rgba(96,165,250,0.04)',
+            }}
+          >
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {CRYPTO_HEATMAP_MODES.map((tab) => {
+                const active = tab.id === mode;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setMode(tab.id)}
+                    className="rounded-sm border px-4 py-2 text-[13px] font-medium transition-all"
+                    style={{
+                      color: active ? '#F5F5F5' : '#A3A3A3',
+                      borderColor: active ? '#2A2A2A' : '#1A1A1A',
+                      background: active ? 'linear-gradient(180deg, #202833 0%, #151A22 100%)' : '#121212',
+                      boxShadow: active ? 'inset 0 0 0 1px rgba(255,255,255,0.03), 0 8px 18px rgba(0,0,0,0.18)' : 'none',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                {
+                  key: 'leader',
+                  title: 'Lider',
+                  tone: getHeatmapSummaryTone('leader'),
+                  symbol: dominantCoin ? COIN_META[dominantCoin.symbol].symbol : '--',
+                  note: 'Ağırlıkta en büyük kutu',
+                },
+                {
+                  key: 'positive',
+                  title: 'En Güçlü',
+                  tone: getHeatmapSummaryTone('positive'),
+                  symbol: topPositive ? COIN_META[topPositive.symbol].symbol : '--',
+                  note:
+                    topPositive?.changePct !== null && topPositive?.changePct !== undefined
+                      ? `+${topPositive.changePct.toFixed(2)}%`
+                      : 'veri yok',
+                },
+                {
+                  key: 'negative',
+                  title: 'En Zayıf',
+                  tone: getHeatmapSummaryTone('negative'),
+                  symbol: topNegative ? COIN_META[topNegative.symbol].symbol : '--',
+                  note:
+                    topNegative?.changePct !== null && topNegative?.changePct !== undefined
+                      ? `${topNegative.changePct.toFixed(2)}%`
+                      : 'veri yok',
+                },
+              ].map((item) => (
+                <div
+                  key={item.key}
+                  className={`relative overflow-hidden rounded-sm border px-4 py-3 ${item.tone.border} ${item.tone.bg}`}
+                  style={{ boxShadow: `inset 0 0 0 1px ${item.tone.accent}14` }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: item.tone.accent }} />
+                  <div className={`mb-2 text-[10px] uppercase tracking-[0.16em] ${item.tone.label}`}>{item.title}</div>
+                  <div className={`text-lg font-semibold leading-none ${item.tone.value}`}>{item.symbol}</div>
+                  <div className="mt-2 text-[11px] text-[#9A9A9A] leading-relaxed">{item.note}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 rounded-sm border border-[#1F3651] bg-[linear-gradient(135deg,rgba(59,130,246,0.14)_0%,rgba(14,23,34,0.96)_42%,rgba(10,12,16,0.98)_100%)] px-4 py-3">
+              <div className="mb-2 flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-[#60A5FA]" />
+                <div className="text-[10px] uppercase tracking-[0.18em] text-[#93C5FD]">Kripto Isı Haritası Okuması</div>
+              </div>
+              <div className="text-sm text-[#E5EEF9] leading-relaxed">
+                Alan büyüklüğü coin’in izlenen ağırlığını, renk tonu ise seçili moda göre anlık gücü gösterir.
+                Büyük ve koyu yeşil kutular piyasa liderliğinin desteklendiğine, kırmızıya dönen büyük kutular ise baskının
+                ana varlıklara yayıldığına işaret eder.
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="h-full rounded-sm border border-[#2A3340] bg-[#101317] p-3"
+            style={{
+              boxShadow: 'inset 0 0 0 1px rgba(125,211,252,0.04)',
+              backgroundImage: 'linear-gradient(180deg, rgba(125,211,252,0.08) 0%, rgba(16,19,23,0.96) 18%, rgba(16,19,23,1) 100%)',
+            }}
+          >
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#8A8A8A] mb-2">Hover Detayı</div>
+            {activeMetric && (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <div
+                    className="h-9 w-9 rounded-sm flex items-center justify-center text-sm font-bold"
+                    style={{ backgroundColor: `${COIN_META[activeMetric.symbol].color}22`, color: COIN_META[activeMetric.symbol].color }}
+                  >
+                    {COIN_META[activeMetric.symbol].symbol[0]}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-[#F3F4F6]">{COIN_META[activeMetric.symbol].symbol}</div>
+                    <div className="text-[11px] text-[#8A8A8A]">{COIN_META[activeMetric.symbol].label}</div>
+                  </div>
+                </div>
+                <div className="space-y-2 text-[12px]">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[#7A7A7A]">Fiyat</span>
+                    <span className="font-mono text-[#E5E5E5]">{formatCryptoPrice(activeMetric.value, activeMetric.symbol)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[#7A7A7A]">24s değişim</span>
+                    <span className="font-mono" style={{ color: trendColor(activeMetric.trend) }}>
+                      {activeMetric.changePct !== null && activeMetric.changePct !== undefined
+                        ? `${(activeMetric.change ?? 0) > 0 ? '+' : ''}${activeMetric.changePct.toFixed(2)}%`
+                        : '--'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[#7A7A7A]">Ağırlık</span>
+                    <span className="font-mono text-[#E5E5E5]">%{CRYPTO_HEATMAP_WEIGHTS[activeMetric.symbol] ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[#7A7A7A]">Momentum</span>
+                    <span className="font-mono text-[#E5E5E5]">{formatHeatmapValue('momentum', activeMetric)}</span>
+                  </div>
+                </div>
+                <div className="mt-auto pt-4 border-t border-[#26303B] text-[11px] text-[#8A8A8A] leading-relaxed">
+                  Kutuların alanı izlenen ağırlığı, renk tonu ise seçili moddaki gücü ve yönü yansıtır.
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="rounded-sm border border-[#1A2533] bg-[radial-gradient(circle_at_top,#132132_0%,#0B0C0D_52%,#090909_100%)] p-3"
+          style={{ boxShadow: 'inset 0 0 0 1px rgba(96,165,250,0.04)' }}
+        >
+          <div className="grid grid-cols-12 grid-rows-5 gap-2 min-h-[460px]">
+            {heatmapMetrics.map((metric) => {
+              const meta = COIN_META[metric.symbol];
+              const tone = getHeatmapTileColor(mode, metric);
+              const isLarge = (CRYPTO_HEATMAP_WEIGHTS[metric.symbol] ?? 0) >= 20;
+              const isActive = activeMetric?.symbol === metric.symbol;
+
+              return (
+                <button
+                  key={`heat-${metric.id}`}
+                  type="button"
+                  onMouseEnter={() => setActiveSymbol(metric.symbol)}
+                  onFocus={() => setActiveSymbol(metric.symbol)}
+                  onClick={() => setActiveSymbol(metric.symbol)}
+                  className={`relative rounded-sm border p-4 flex flex-col justify-between overflow-hidden text-left transition-all duration-200 hover:-translate-y-0.5 ${CRYPTO_HEATMAP_LAYOUT[metric.symbol] ?? 'col-span-2 row-span-1'}`}
+                  style={{
+                    background: tone.background,
+                    borderColor: isActive ? '#F3F4F6' : tone.border,
+                    boxShadow: isActive
+                      ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(255,255,255,0.18), 0 18px 30px rgba(0,0,0,0.22)'
+                      : 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 32%, rgba(0,0,0,0.10) 100%)' }} />
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div>
+                      <div
+                        className="font-semibold tracking-tight"
+                        style={{
+                          color: tone.text,
+                          fontSize: isLarge ? '5.6rem' : (CRYPTO_HEATMAP_WEIGHTS[metric.symbol] ?? 0) >= 10 ? '2.15rem' : '1.05rem',
+                          lineHeight: isLarge ? '0.9' : '1',
+                        }}
+                      >
+                        {meta.symbol}
+                      </div>
+                      {!isLarge && (
+                        <div className="mt-1 text-[11px] uppercase tracking-[0.16em]" style={{ color: `${tone.text}B8` }}>
+                          {meta.label}
+                        </div>
+                      )}
+                    </div>
+
+                    {metric.changePct !== null && (
+                      <div
+                        className="rounded-sm px-2 py-1 text-[11px] font-mono"
+                        style={{
+                          color: tone.text,
+                          background: 'rgba(10,10,10,0.18)',
+                          border: '1px solid rgba(255,255,255,0.09)',
+                          backdropFilter: 'blur(2px)',
+                        }}
+                      >
+                        {(metric.change ?? 0) > 0 ? '+' : ''}{metric.changePct.toFixed(2)}%
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative mt-auto">
+                    <div
+                      className="font-mono tabular-nums"
+                      style={{
+                        color: tone.value,
+                        fontSize: isLarge ? '2.7rem' : (CRYPTO_HEATMAP_WEIGHTS[metric.symbol] ?? 0) >= 10 ? '1.55rem' : '1rem',
+                        lineHeight: 1.05,
+                      }}
+                    >
+                      {formatHeatmapValue(mode, metric)}
+                    </div>
+                    <div className="mt-2 text-[11px]" style={{ color: `${tone.text}CC` }}>
+                      {mode === 'weight'
+                        ? 'İzlenen ağırlık payı'
+                        : mode === 'change'
+                          ? 'Son 24 saat fiyat değişimi'
+                          : mode === 'momentum'
+                            ? 'Kısa vadeli yön kuvveti'
+                            : 'Anlık spot fiyat'}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Fear & Greed gauge ────────────────────────────────────────────────────────
@@ -726,6 +1290,11 @@ export function CryptoPage({
         )}
       </div>
 
+      <CryptoMetricsHeader
+        title="Kripto Para Piyasaları Metrikleri"
+        description="Kategoriye ait ana metrikleri, kapsama düzeyini ve alt kırılımları bu bölümde birlikte okuyabilirsin."
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] px-4 py-3">
           <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Veri kapsaması</div>
@@ -779,14 +1348,14 @@ export function CryptoPage({
         </div>
       </div>
 
+      <CryptoHeatmapPanel metrics={priceMetrics} />
+
       {/* ── Section 3: Duyarlılık + Kurumsal Barometreler ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Fear & Greed */}
         <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-          <div className="mb-4 inline-flex items-center rounded-sm border border-[#1E1E1E] bg-[#090909] px-3 py-1.5 text-[11px] text-[#E5E5E5] uppercase tracking-wider shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-            Duyarlılık ve Perakende İlgi
-          </div>
+          <CryptoSectionHeader title="Duyarlılık ve Perakende İlgi" />
         <div className="grid grid-cols-1 gap-4 mb-4">
           {sentimentItems.map((item) => (
             <div key={item.key}>
@@ -818,9 +1387,7 @@ export function CryptoPage({
 
         {/* Market barometers */}
         <div className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-          <div className="mb-4 inline-flex items-center rounded-sm border border-[#1E1E1E] bg-[#090909] px-3 py-1.5 text-[11px] text-[#E5E5E5] uppercase tracking-wider shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-            Kurumsal ve Şirket Barometreleri
-          </div>
+          <CryptoSectionHeader title="Kurumsal ve Şirket Barometreleri" />
           <div className="space-y-3">
             {marketMetrics.map((m) => (
               <div key={m.id}>

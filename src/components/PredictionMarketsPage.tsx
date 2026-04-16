@@ -121,8 +121,19 @@ const SECTIONS = [
   },
 ] as const;
 
-// Spotlight'ta öne çıkarılacak 4 sembol
-const SPOTLIGHT_SYMBOLS = ['PM_FED_CUT_PROB', 'PM_US_RECESSION_PROB', 'PM_TRADE_WAR_ESCALATION_PROB', 'PM_GENERAL_SCORE'];
+// Spotlight'ta önceliklendirilecek kritik metrik havuzu
+const SPOTLIGHT_SYMBOLS = [
+  'PM_FED_CUT_PROB',
+  'PM_US_RECESSION_PROB',
+  'PM_WAR_ESCALATION_PROB',
+  'PM_GENERAL_SCORE',
+  'PM_RATE_HIKE_PROB',
+  'PM_SOFT_LANDING_PROB',
+  'PM_MARKET_CONFIDENCE_SCORE',
+  'PM_MACRO_RISK_SCORE',
+  'PM_INFLATION_PRICING_SCORE',
+  'PM_CREDIT_SPREAD_WIDENING_PROB',
+];
 
 // ─── Yardımcı fonksiyonlar ────────────────────────────────────────────────────
 
@@ -171,6 +182,44 @@ function ChangePill({ metric }: { metric: Metric }) {
       {(metric.change ?? 0) < 0 && <ArrowDown className="w-3 h-3" />}
       {(metric.change ?? 0) === 0 && <Minus className="w-3 h-3" />}
       {Math.abs(metric.changePct).toFixed(2)}%
+    </div>
+  );
+}
+
+function PredictionMetricsHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div
+      className="relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
+      style={{
+        borderColor: '#2A2A2A',
+        background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+        boxShadow: '0 0 0 1px rgba(245,158,11,0.08) inset, 0 16px 34px rgba(245,158,11,0.08)',
+      }}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 50%, #FDE68A 100%)' }} />
+      <div className="absolute -left-10 top-0 h-24 w-24 rounded-full blur-2xl pointer-events-none bg-[#F59E0B]/[0.08]" />
+      <div className="absolute right-6 top-3 h-14 w-14 rounded-full blur-2xl pointer-events-none bg-[#FBBF24]/[0.10]" />
+      <div className="relative">
+        <div
+          className="mb-2 inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
+          style={{
+            color: '#FBBF24',
+            borderColor: 'rgba(251,191,36,0.25)',
+            backgroundColor: 'rgba(251,191,36,0.12)',
+            boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.08), 0 0 18px rgba(245,158,11,0.06)',
+          }}
+        >
+          Veri Bölümü
+        </div>
+        <div className="text-sm font-medium text-[#F5F5F5]">{title}</div>
+        <div className="mt-1 text-xs text-[#B0B0B0] leading-relaxed">{description}</div>
+      </div>
     </div>
   );
 }
@@ -412,9 +461,18 @@ export function PredictionMarketsPage({
     ? Math.max(1, Math.min(5, Math.round(aiConfidence)))
     : coverageRatio >= 85 ? 4 : coverageRatio >= 65 ? 3 : coverageRatio >= 40 ? 2 : 1;
 
-  const spotlightMetrics = SPOTLIGHT_SYMBOLS
+  const spotlightPrimary = SPOTLIGHT_SYMBOLS
     .map((s) => bySymbol.get(s))
     .filter((metric): metric is Metric => Boolean(metric && metric.value !== null));
+
+  const spotlightFallback = pilotMetrics.filter(
+    (metric) =>
+      metric.value !== null
+      && (isProbMetric(metric) || isScoreMetric(metric))
+      && !spotlightPrimary.some((selected) => selected.symbol === metric.symbol),
+  );
+
+  const spotlightMetrics = [...spotlightPrimary, ...spotlightFallback].slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -477,6 +535,11 @@ export function PredictionMarketsPage({
       </div>
 
       {/* ── Meta strip ────────────────────────────────────────────────────── */}
+      <PredictionMetricsHeader
+        title="Polymarket / Kalshi Tahmin Piyasaları Metrikleri"
+        description="Kategoriye ait ana metrikleri, kapsama düzeyini ve alt kırılımları bu bölümde birlikte okuyabilirsin."
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] px-4 py-3">
           <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Veri kapsaması</div>

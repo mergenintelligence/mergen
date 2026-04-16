@@ -427,15 +427,22 @@ function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; ico
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-start justify-between gap-3 px-4 py-1.5 text-[13px] group relative cursor-pointer transition-colors ${
-        active ? 'text-[#E5E5E5] bg-[#111111]' : 'text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#111111]'
+      className={`w-full flex items-start justify-between gap-3 px-4 py-1.5 text-[13px] group relative cursor-pointer transition-all ${
+        active ? 'text-[#F5E7B0] bg-[#14110A]' : 'text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#111111]'
       }`}
+      style={active ? { boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.10), inset 0 14px 30px rgba(251,191,36,0.05)' } : undefined}
     >
       {active && (
-        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#E5E5E5]" />
+        <>
+          <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FBBF24]" />
+          <div className="absolute inset-y-0 left-0 w-10 bg-[linear-gradient(90deg,rgba(251,191,36,0.12)_0%,rgba(251,191,36,0.04)_55%,transparent_100%)] pointer-events-none" />
+        </>
       )}
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
-        <div className="mt-0.5 h-3.5 w-3.5 shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:stroke-[1.5]">
+        <div
+          className="mt-0.5 h-3.5 w-3.5 shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:stroke-[1.5]"
+          style={active ? { color: '#FBBF24' } : undefined}
+        >
           {icon}
         </div>
         <span className="min-w-0 text-left leading-[1.25rem] whitespace-normal break-words">
@@ -443,7 +450,12 @@ function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; ico
         </span>
       </div>
       {badge && (
-        <span className="mt-0.5 shrink-0 text-[9px] tabular-nums bg-[#1F1F1F] text-[#A3A3A3] px-1.5 py-0.5 rounded-sm">
+        <span
+          className={`mt-0.5 shrink-0 text-[9px] tabular-nums px-1.5 py-0.5 rounded-sm ${
+            active ? 'bg-[#2A1F08] text-[#FBBF24]' : 'bg-[#1F1F1F] text-[#A3A3A3]'
+          }`}
+          style={active ? { boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.14)' } : undefined}
+        >
           {badge}
         </span>
       )}

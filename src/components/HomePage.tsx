@@ -168,6 +168,66 @@ interface HomePageProps {
   onRemoveFromWatchlist?: (symbol: string) => void;
 }
 
+function PremiumPanelHeader({
+  icon,
+  title,
+  accent,
+  subtitle,
+  right,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  accent: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="relative overflow-hidden border-b px-4 py-3"
+      style={{
+        borderBottomColor: `${accent}22`,
+        background: `linear-gradient(135deg, ${accent}18 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)`,
+        boxShadow: `inset 0 0 0 1px ${accent}08`,
+      }}
+    >
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${accent} 0%, ${accent}CC 45%, ${accent}66 100%)` }} />
+      <div className="absolute -left-8 top-0 h-20 w-20 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accent}12` }} />
+      <div className="absolute right-4 top-2 h-12 w-12 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accent}10` }} />
+
+      <div className="relative flex items-start gap-3">
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border"
+          style={{
+            borderColor: `${accent}30`,
+            backgroundColor: `${accent}14`,
+            color: accent,
+            boxShadow: `inset 0 0 14px ${accent}12`,
+          }}
+        >
+          {icon}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div
+            className="inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]"
+            style={{
+              color: accent,
+              borderColor: `${accent}36`,
+              backgroundColor: `${accent}14`,
+              boxShadow: `inset 0 0 0 1px ${accent}10`,
+            }}
+          >
+            {title}
+          </div>
+          {subtitle && <div className="mt-2 text-[11px] leading-relaxed text-[#A8A8A8]">{subtitle}</div>}
+        </div>
+
+        {right && <div className="shrink-0">{right}</div>}
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // ALERT TYPE META
 // ─────────────────────────────────────────────────────────────
@@ -681,13 +741,11 @@ function WorldMap({
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A1A]">
-        <Globe className="w-4 h-4 text-[#A3A3A3]" />
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-          Küresel Piyasa Haritası
-        </span>
-        <span className="ml-auto text-[11px] text-[#666666]">bölgeye tıklayarak kategoriye geç</span>
-      </div>
+      <PremiumPanelHeader
+        icon={<Globe className="w-4 h-4" />}
+        title="Küresel Piyasa Haritası"
+        accent="#60A5FA"
+      />
 
       {/* Mode Tabs */}
       <div className="flex gap-px bg-[#0A0A0A] border-b border-[#1A1A1A] overflow-x-auto">
@@ -1108,20 +1166,21 @@ function CategoryHeatmap({
 }) {
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-        <Activity className="w-4 h-4 text-[#A3A3A3]" />
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-          Kategori Isı Haritası
-        </span>
-        <div className="ml-auto flex items-center gap-3">
+      <PremiumPanelHeader
+        icon={<Activity className="w-4 h-4" />}
+        title="Kategori Isı Haritası"
+        accent="#F59E0B"
+        right={
+          <div className="flex items-center gap-3">
           {[{ c: '#4ADE80', l: '≥70' }, { c: '#FBBF24', l: '50–69' }, { c: '#FB923C', l: '30–49' }, { c: '#F87171', l: '<30' }].map(item => (
             <span key={item.l} className="flex items-center gap-1 text-[10px] font-mono text-[#666666]">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.c }} />
               {item.l}
             </span>
           ))}
-        </div>
-      </div>
+          </div>
+        }
+      />
       <div className="grid grid-cols-6 gap-px bg-[#0A0A0A]">
         {categories.map(cat => {
           const score = cat.score !== null ? Math.round(cat.score) : null;
@@ -1194,18 +1253,19 @@ function ContributorsPanel({ categories }: { categories: DashboardData['categori
 
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-        <Zap className="w-4 h-4 text-[#A3A3A3]" />
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-          Yukarı / Aşağı Çekenler
-        </span>
-        {avg !== null && (
-          <span className="ml-auto text-[11px] font-mono text-[#888888]">
-            Ortalama:&nbsp;
-            <span className="font-bold" style={{ color: scoreColor(avg) }}>{avg}</span>
-          </span>
-        )}
-      </div>
+      <PremiumPanelHeader
+        icon={<Zap className="w-4 h-4" />}
+        title="Yukarı / Aşağı Çekenler"
+        accent="#FBBF24"
+        right={
+          avg !== null ? (
+            <span className="text-[11px] font-mono text-[#888888]">
+              Ortalama:&nbsp;
+              <span className="font-bold" style={{ color: scoreColor(avg) }}>{avg}</span>
+            </span>
+          ) : undefined
+        }
+      />
 
       <div className="flex-1 grid grid-cols-2 divide-x divide-[#1A1A1A]">
         {/* Sol: Güçlü Alanlar */}
@@ -1296,13 +1356,12 @@ function RegimeRadar({ categories }: { categories: DashboardData['categories'] }
 
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-        <Map className="w-4 h-4 text-[#A3A3A3]" />
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-          Rejim Radar
-        </span>
-        <span className="ml-auto text-[10px] font-mono text-[#555555]">6 eksen · 0–100</span>
-      </div>
+      <PremiumPanelHeader
+        icon={<Map className="w-4 h-4" />}
+        title="Rejim Radar"
+        accent="#60A5FA"
+        right={<span className="text-[10px] font-mono text-[#666666]">6 eksen · 0–100</span>}
+      />
       <div className="p-4">
         <ResponsiveContainer width="100%" height={260}>
           <RadarChart data={radarData} margin={{ top: 16, right: 40, bottom: 16, left: 40 }}>
@@ -1361,18 +1420,19 @@ function ReadingFlow({
 
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-        <BookOpen className="w-4 h-4 text-[#A3A3A3]" />
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-          İnceleme Akışı
-        </span>
-        <span
-          className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded-sm border"
-          style={{ color: flow.color, borderColor: flow.color + '40', backgroundColor: flow.color + '12' }}
-        >
-          {flow.label}
-        </span>
-      </div>
+      <PremiumPanelHeader
+        icon={<BookOpen className="w-4 h-4" />}
+        title="İnceleme Akışı"
+        accent={flow.color}
+        right={
+          <span
+            className="text-[10px] font-mono px-2 py-0.5 rounded-sm border"
+            style={{ color: flow.color, borderColor: flow.color + '40', backgroundColor: flow.color + '12' }}
+          >
+            {flow.label}
+          </span>
+        }
+      />
       <div className="p-4">
         <p className="text-[12px] text-[#888888] leading-relaxed mb-4">{flow.desc}</p>
         {resolvedItems.length === 0 ? (
@@ -1432,12 +1492,11 @@ function RegionalRiskMap({ categories }: { categories: DashboardData['categories
 
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-        <Map className="w-4 h-4 text-[#A3A3A3]" />
-        <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-          Bölgesel Risk Görünümü
-        </span>
-      </div>
+      <PremiumPanelHeader
+        icon={<Map className="w-4 h-4" />}
+        title="Bölgesel Risk Görünümü"
+        accent="#FB923C"
+      />
       <div className="flex-1 flex flex-col divide-y divide-[#141414]">
         {regions.map(region => {
           const color = scoreColor(region.score);
@@ -1544,11 +1603,12 @@ export function HomePage({
       {/* ─── Watchlist ───────────────────────────────────── */}
       {watchlist.length > 0 && (
         <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1A1A1A]">
-            <Star className="w-4 h-4 text-[#FBBF24]" />
-            <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">İzleme Listesi</span>
-            <span className="ml-auto text-[11px] text-[#555555] font-mono">{watchlist.length} metrik</span>
-          </div>
+          <PremiumPanelHeader
+            icon={<Star className="w-4 h-4" />}
+            title="İzleme Listesi"
+            accent="#FBBF24"
+            right={<span className="text-[11px] text-[#666666] font-mono">{watchlist.length} metrik</span>}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1A1A1A]">
             {watchlist.map((item) => (
               <div key={item.symbol} className="bg-[#111111] px-4 py-3 flex items-center gap-3">
@@ -1677,10 +1737,11 @@ export function HomePage({
 
       {/* ─── Son Sapmalar ────────────────────────────────── */}
       <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1A1A1A]">
-          <Activity className="w-4 h-4 text-[#A3A3A3]" />
-          <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">Son Sapmalar</span>
-        </div>
+        <PremiumPanelHeader
+          icon={<Activity className="w-4 h-4" />}
+          title="Son Sapmalar"
+          accent="#A78BFA"
+        />
         <div className="p-3">
           {divergences.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">

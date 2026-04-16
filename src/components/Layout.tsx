@@ -171,10 +171,15 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
         <button
           type="button"
           onClick={() => onSelectCategory && onSelectCategory('home')}
-          className="px-4 h-[44px] border-b border-[#1F1F1F] flex items-center gap-2 text-left hover:bg-[#111111] transition-colors shrink-0"
+          className="px-4 h-[44px] border-b border-[#1F1F1F] flex items-center gap-3 text-left hover:bg-[#111111] transition-colors shrink-0"
         >
-          <Hexagon className="w-4 h-4 text-[#A3A3A3]" />
-          <span className="font-semibold tracking-wide text-[12px] uppercase">Mergen Intelligence</span>
+          <Hexagon className="w-4 h-4 text-[#A3A3A3] shrink-0" />
+          <div className="min-w-0 relative inline-flex items-start">
+            <div className="font-semibold tracking-wide text-[12px] uppercase leading-none">Mergen Intelligence</div>
+            <span className="absolute -top-2 -right-8 text-[8px] font-mono uppercase tracking-[0.18em] text-[#FBBF24]">
+              Beta
+            </span>
+          </div>
         </button>
         
         <div className="flex-1 overflow-y-auto py-3">

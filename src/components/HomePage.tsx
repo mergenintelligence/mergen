@@ -1653,15 +1653,15 @@ export function HomePage({
         </div>
       </div>
 
-      {/* ─── Küresel Piyasa Haritası ─────────────────────── */}
-      <WorldMap categories={categories} onSelectCategory={onSelectCategory} />
-
       {/* ─── Kategori Isı Haritası ───────────────────────── */}
       <CategoryHeatmap
         categories={categories}
         visiblePlaceholders={visiblePlaceholders}
         onSelectCategory={onSelectCategory}
       />
+
+      {/* ─── Küresel Piyasa Haritası ─────────────────────── */}
+      <WorldMap categories={categories} onSelectCategory={onSelectCategory} />
 
       {/* ─── Row: Contributors + Radar ───────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4">

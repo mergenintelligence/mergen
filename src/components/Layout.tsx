@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Activity, AlertTriangle, Settings, BarChart2, Globe, TrendingDown, Users, Cpu, Landmark, DollarSign, Hexagon, Wheat, Zap, ArrowLeftRight, Building2, TrendingUp, Bitcoin, Search, BookOpen } from 'lucide-react';
+import { Home, Activity, AlertTriangle, Settings, BarChart2, Globe, TrendingDown, Users, Cpu, Landmark, DollarSign, Hexagon, Wheat, Zap, ArrowLeftRight, Building2, TrendingUp, Bitcoin, Search, BookOpen, Send, Earth } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -135,6 +135,11 @@ function getMarketStatuses(): MarketStatus[] {
 
 const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
 const PREDICTION_CATEGORY_ID = '30000000-0000-0000-0000-000000000012';
+const SOCIAL_LINKS = [
+  { label: 'Web', href: 'https://mergenintel.com', accent: '#60A5FA', icon: <Earth className="w-3.5 h-3.5" /> },
+  { label: 'X', href: 'https://x.com/mergenintel', accent: '#F5F5F5', icon: <span className="text-[12px] font-semibold leading-none">X</span> },
+  { label: 'Telegram', href: 'https://t.me/mergenintel', accent: '#38BDF8', icon: <Send className="w-3.5 h-3.5" /> },
+] as const;
 
 export function Layout({ children, lastUpdate, categories = [], alertCount = 0, selectedCategoryId, onSelectCategory, onOpenSearch }: LayoutProps) {
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
@@ -167,7 +172,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
   return (
     <div className="flex h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-[280px] shrink-0 border-r border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
+      <aside className="w-[320px] shrink-0 border-r border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
         <button
           type="button"
           onClick={() => onSelectCategory && onSelectCategory('home')}
@@ -258,8 +263,8 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
             ))}
           </nav>
 
-          <div className="px-4 mt-6 mb-1.5 text-[10px] font-semibold text-[#666666] uppercase tracking-[0.16em]">
-            İçerik
+          <div className="px-4 my-4">
+            <div className="h-px bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.08)_20%,rgba(255,255,255,0.08)_80%,transparent_100%)]" />
           </div>
           <nav className="space-y-0.5 mb-4">
             <NavItem
@@ -270,8 +275,8 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
             />
           </nav>
 
-          <div className="px-4 mb-1.5 text-[10px] font-semibold text-[#666666] uppercase tracking-[0.16em]">
-            Sistem
+          <div className="px-4 my-4">
+            <div className="h-px bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.08)_20%,rgba(255,255,255,0.08)_80%,transparent_100%)]" />
           </div>
           <nav className="space-y-0.5">
             <NavItem
@@ -295,6 +300,24 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
               onClick={() => onSelectCategory && onSelectCategory(SETTINGS_SECTION_ID)}
             />
           </nav>
+
+          <div className="px-4 mt-3">
+            <div className="flex items-center justify-start gap-3">
+              {SOCIAL_LINKS.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={item.label}
+                  title={item.label}
+                  className="flex h-4 w-4 items-center justify-center text-[#7A7A7A] transition-colors hover:text-[#E5E5E5]"
+                >
+                  {item.icon}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -432,7 +455,7 @@ function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; ico
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-start justify-between gap-3 px-4 py-1.5 text-[13px] group relative cursor-pointer transition-all ${
+      className={`w-full flex items-start justify-between gap-3 px-4 py-1.5 text-[12.5px] group relative cursor-pointer transition-all ${
         active ? 'text-[#F5E7B0] bg-[#14110A]' : 'text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#111111]'
       }`}
       style={active ? { boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.10), inset 0 14px 30px rgba(251,191,36,0.05)' } : undefined}
@@ -450,7 +473,7 @@ function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; ico
         >
           {icon}
         </div>
-        <span className="min-w-0 text-left leading-[1.25rem] whitespace-normal break-words">
+        <span className="min-w-0 flex-1 overflow-hidden text-left leading-[1.2rem] whitespace-nowrap text-ellipsis">
           {label}
         </span>
       </div>

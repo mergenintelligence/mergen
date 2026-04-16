@@ -1095,15 +1095,11 @@ function StartHereCard({
 
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
-      <div className="px-4 pt-4 pb-3 border-b border-[#1A1A1A]">
-        <div className="flex items-center gap-2">
-          <Eye className="w-4 h-4 text-[#A3A3A3]" />
-          <span className="text-[13px] font-semibold uppercase tracking-wider text-[#C4C4C4]">
-            Bugün Nereden Başlamalıyım?
-          </span>
-        </div>
-        <div className="text-[11px] text-[#666666] mt-1">İlk incelenmesi gereken kategoriler.</div>
-      </div>
+      <PremiumPanelHeader
+        icon={<Eye className="w-4 h-4" />}
+        title="Bugün Nereden Başlamalıyım?"
+        accent="#38BDF8"
+      />
       <div className="divide-y divide-[#1A1A1A]">
         {priorities.length === 0 ? (
           <div className="px-4 py-6 text-[13px] text-[#555555] font-mono">Veri bekleniyor...</div>

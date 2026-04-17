@@ -2966,6 +2966,8 @@ export function HomePage({
         </div>
       </div>
 
+      <TopAssetsMarketPanel />
+
       <Mag7LeadershipHeatmap />
 
       {/* ─── Kategori Isı Haritası ───────────────────────── */}
@@ -2976,8 +2978,6 @@ export function HomePage({
       />
 
       <CorrelationSignalPanel categories={categories} onSelectCategory={onSelectCategory} />
-
-      <TopAssetsMarketPanel />
 
       {/* ─── Küresel Piyasa Haritası ─────────────────────── */}
       <WorldMap categories={categories} onSelectCategory={onSelectCategory} />

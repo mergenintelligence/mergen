@@ -19,6 +19,7 @@ import { PredictionMarketsPage } from './components/PredictionMarketsPage';
 import { NewsPage } from './components/NewsPage';
 import { DirectionCard, HomePage } from './components/HomePage';
 import { WeeklyReportsPage } from './components/WeeklyReportsPage';
+import { AiInsightCard } from './components/AiInsightCard';
 
 const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
 const PREDICTION_CATEGORY_ID = '30000000-0000-0000-0000-000000000012';
@@ -1668,55 +1669,14 @@ export default function App() {
             ) : (
               <>
                 {/* AI Insight Card */}
-                <div
-                  className="relative rounded-sm border border-[#1A2E1A] overflow-hidden p-5 mb-6"
-                  style={{
-                    background: 'linear-gradient(135deg, #0A1A0F 0%, #111111 55%, #0D1119 100%)',
-                    boxShadow: '0 0 0 1px rgba(74,222,128,0.05) inset, 0 16px 40px rgba(74,222,128,0.04)',
-                  }}
-                >
-                  <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #4ADE80 30%, #34D399 65%, transparent)' }} />
-
-                  <div className="flex items-start gap-3 mb-4">
-                    <div
-                      className="flex-shrink-0 mt-0.5 flex flex-col items-center gap-1"
-                    >
-                      <div className={`w-2 h-2 rounded-full ${data?.aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#444444]'}`} style={{ boxShadow: data?.aiInsight ? '0 0 6px #4ADE80' : 'none' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#4ADE80] mb-1.5">MERGEN AI · Analiz</div>
-                      <div className="text-[15px] font-bold text-[#E5E5E5] leading-snug">
-                        {data?.categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori'}
-                      </div>
-                    </div>
-                    {data?.aiConfidence !== null && data?.aiConfidence !== undefined && (
-                      <ConfidenceBadge confidence={data.aiConfidence} />
-                    )}
-                  </div>
-
-                  <div className="border-t border-[#1A2E1A] mb-4" />
-
-                  {data?.aiInsight ? (
-                    <>
-                      <div className="text-[13px] text-[#D4D4D4] leading-relaxed">
-                        {data.aiInsight}
-                      </div>
-                      {data.aiSimpleSummary && (
-                        <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
-                          <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">
-                            Sadeleştirilmiş kısa özet:
-                          </div>
-                          <div className="text-[13px] text-[#AAAAAA] leading-relaxed">
-                            {data.aiSimpleSummary}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-[13px] text-[#555555] leading-relaxed italic">
-                      Bu kategori için henüz AI yorumu oluşmadı. Gemini kotası doluysa kart boş kalabilir. Daha sonra tekrar deneyiniz.
-                    </div>
-                  )}
+                <div className="mb-6">
+                  <AiInsightCard
+                    title={`${data?.categories.find(c => c.id === selectedCategoryId)?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori'} - Mergen Intelligent Yorumu`}
+                    insight={data?.aiInsight ?? null}
+                    simpleSummary={data?.aiSimpleSummary ?? null}
+                    confidence={data?.aiConfidence ?? null}
+                    emptyText="Bu kategori için henüz AI yorumu oluşmadı. Gemini kotası doluysa kart boş kalabilir. Daha sonra tekrar deneyiniz."
+                  />
                 </div>
 
                 <div

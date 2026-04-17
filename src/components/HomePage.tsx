@@ -8,6 +8,7 @@ import {
   ShieldAlert, Landmark, Flame, Thermometer, Ship, Flag, Star, X, Link2, BellRing,
 } from 'lucide-react';
 import type { DashboardData } from '../hooks/useDashboardData';
+import { AiInsightCard } from './AiInsightCard';
 
 // ─────────────────────────────────────────────────────────────
 // UTILS
@@ -2137,42 +2138,15 @@ export function HomePage({
 
       {/* ─── Yapay Zeka Piyasa Yorumu ────────────────────── */}
       {(loading || homeInsight || homeSimpleSummary) && (
-        <div className="relative rounded-sm border border-[#1A3A1A] bg-[#0A1A0A] overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-[#4ADE80]" />
-          <div className="p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse shrink-0" />
-              <span className="text-[11px] font-mono uppercase tracking-[0.15em] text-[#4ADE80]">Mergen Intelligent Genel Piyasa Yorumu</span>
-              {homeConfidence !== null && (
-                <span className="ml-auto text-[10px] font-mono text-[#4A8A4A] border border-[#1A3A1A] px-2 py-0.5 rounded-sm">
-                  güven {homeConfidence}/5
-                </span>
-              )}
-            </div>
-            {loading && !homeInsight ? (
-              <div className="flex items-center gap-3 text-[13px] text-[#7FB08A]">
-                <span className="inline-block h-3 w-3 rounded-full border-2 border-[#245A2E] border-t-[#4ADE80] animate-spin shrink-0" />
-                <span className="leading-relaxed">Mergen Intelligent Genel Piyasa Yorumu yükleniyor. Genel piyasa özeti hazırlanıyor...</span>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-[13px] text-[#B0B0B0] leading-relaxed">
-                  {homeInsight ?? 'Bu alan için henüz yorum oluşmadı. Veri akışı tamamlandığında özet burada görünecek.'}
-                </p>
-                {homeSimpleSummary && (
-                  <div className="pt-4 border-t border-[#1A3A1A]">
-                    <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">
-                      Sadeleştirilmiş kısa özet:
-                    </div>
-                    <div className="text-[13px] text-[#8FC79C] leading-relaxed">
-                      {homeSimpleSummary}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <AiInsightCard
+          title="Mergen Intelligent Genel Piyasa Yorumu"
+          insight={homeInsight}
+          simpleSummary={homeSimpleSummary}
+          confidence={homeConfidence}
+          loading={loading}
+          loadingText="Mergen Intelligent Genel Piyasa Yorumu yükleniyor. Genel piyasa özeti hazırlanıyor..."
+          emptyText="Bu alan için henüz yorum oluşmadı. Veri akışı tamamlandığında özet burada görünecek."
+        />
       )}
 
       {/* ─── Watchlist ───────────────────────────────────── */}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, Minus, Layers3, Radar, Scale, BarChart3, ShieldAlert, TrendingUp, DollarSign, Globe, Landmark, Bitcoin, Wheat, Star } from 'lucide-react';
 import type { DashboardData } from '../hooks/useDashboardData';
+import { AiInsightCard } from './AiInsightCard';
 
 type Metric = DashboardData['pilotMetrics'][number];
 
@@ -478,61 +479,13 @@ export function PredictionMarketsPage({
     <div className="space-y-6">
 
       {/* ── AI Yorumu ─────────────────────────────────────────────────────── */}
-      <div
-        className="relative rounded-sm border border-[#1A2E1A] overflow-hidden p-5"
-        style={{
-          background: 'linear-gradient(135deg, #0A1A0F 0%, #111111 55%, #0D1119 100%)',
-          boxShadow: '0 0 0 1px rgba(74,222,128,0.05) inset, 0 16px 40px rgba(74,222,128,0.04)',
-        }}
-      >
-        <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #4ADE80 30%, #34D399 65%, transparent)' }} />
-
-        <div className="flex items-start gap-3 mb-4">
-          <div className="flex-shrink-0 mt-0.5">
-            <div
-              className={`w-2 h-2 rounded-full ${aiInsight ? 'bg-[#4ADE80] animate-pulse' : 'bg-[#444444]'}`}
-              style={{ boxShadow: aiInsight ? '0 0 6px #4ADE80' : 'none' }}
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#4ADE80] mb-1.5">MERGEN AI · Analiz</div>
-            <div className="text-[15px] font-bold text-[#E5E5E5] leading-snug">Polymarket / Kalshi Tahmin Piyasaları</div>
-          </div>
-          <div className="flex-shrink-0 flex items-center gap-2 border border-[#1A2E1A] bg-[#0A1A0F] px-3 py-2 rounded-sm">
-            <span className="text-[11px] font-mono text-[#4ADE80] whitespace-nowrap">Güven {aiReliability}/5</span>
-            <div className="flex items-center gap-0.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-2 w-4 rounded-[2px]"
-                  style={{
-                    background: i < aiReliability ? '#4ADE80' : '#1A2A1A',
-                    boxShadow: i < aiReliability ? '0 0 4px rgba(74,222,128,0.5)' : 'none',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-[#1A2E1A] mb-4" />
-
-        {aiInsight ? (
-          <>
-            <div className="text-[13px] text-[#D4D4D4] leading-relaxed">{aiInsight}</div>
-            {aiSimpleSummary && (
-              <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
-                <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">Sadeleştirilmiş kısa özet:</div>
-                <div className="text-[13px] text-[#AAAAAA] leading-relaxed">{aiSimpleSummary}</div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-[13px] text-[#555555] leading-relaxed italic">
-            Bu kategori için henüz AI yorumu oluşmadı. Gemini kotası doluysa kart boş kalabilir. Daha sonra tekrar deneyiniz.
-          </div>
-        )}
-      </div>
+      <AiInsightCard
+        title="Polymarket / Kalshi Tahmin Piyasaları - Mergen Intelligent Yorumu"
+        insight={aiInsight}
+        simpleSummary={aiSimpleSummary}
+        confidence={aiReliability}
+        emptyText="Bu kategori için henüz AI yorumu oluşmadı. Gemini kotası doluysa kart boş kalabilir. Daha sonra tekrar deneyiniz."
+      />
 
       {/* ── Meta strip ────────────────────────────────────────────────────── */}
       <PredictionMetricsHeader

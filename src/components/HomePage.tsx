@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip,
 } from 'recharts';
 import {
   Activity, TrendingUp, TrendingDown, Minus,
-  Zap, Map, ArrowRight, BookOpen, Eye, Globe,
-  ShieldAlert, Landmark, Flame, Thermometer, Ship, Flag, Star, X,
+  Zap, Map as MapIcon, ArrowRight, BookOpen, Eye, Globe,
+  ShieldAlert, Landmark, Flame, Thermometer, Ship, Flag, Star, X, Link2, BellRing,
 } from 'lucide-react';
 import type { DashboardData } from '../hooks/useDashboardData';
 
@@ -183,7 +183,7 @@ function PremiumPanelHeader({
 }) {
   return (
     <div
-      className="relative overflow-hidden border-b px-4 py-3"
+      className="premium-panel-header relative overflow-hidden border-b px-4 py-3"
       style={{
         borderBottomColor: `${accent}22`,
         background: `linear-gradient(135deg, ${accent}18 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)`,
@@ -194,9 +194,9 @@ function PremiumPanelHeader({
       <div className="absolute -left-8 top-0 h-20 w-20 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accent}12` }} />
       <div className="absolute right-4 top-2 h-12 w-12 rounded-full blur-2xl pointer-events-none" style={{ backgroundColor: `${accent}10` }} />
 
-      <div className="relative flex items-start gap-3">
+      <div className="premium-panel-header__inner relative flex items-start gap-3">
         <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border"
+          className="premium-panel-header__icon flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border"
           style={{
             borderColor: `${accent}30`,
             backgroundColor: `${accent}14`,
@@ -207,9 +207,9 @@ function PremiumPanelHeader({
           {icon}
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="premium-panel-header__content min-w-0 flex-1">
           <div
-            className="inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]"
+            className="premium-panel-header__eyebrow inline-flex items-center rounded-sm border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]"
             style={{
               color: accent,
               borderColor: `${accent}36`,
@@ -219,13 +219,116 @@ function PremiumPanelHeader({
           >
             {title}
           </div>
-          {subtitle && <div className="mt-2 text-[11px] leading-relaxed text-[#A8A8A8]">{subtitle}</div>}
+          {subtitle && <div className="premium-panel-header__subtitle mt-2 text-[11px] leading-relaxed text-[#A8A8A8]">{subtitle}</div>}
         </div>
 
-        {right && <div className="shrink-0">{right}</div>}
+        {right && <div className="premium-panel-header__right shrink-0">{right}</div>}
       </div>
     </div>
   );
+}
+
+type CorrelationWindow = 30 | 60 | 90;
+type TimelineWindow = '24h' | '48h' | '7d';
+
+type CorrelationCell = {
+  key: string;
+  leftId: string;
+  rightId: string;
+  leftName: string;
+  rightName: string;
+  correlation: number;
+  lag: number;
+};
+
+type TimelineEvent = {
+  id: string;
+  timestamp: string;
+  priority: 'critical' | 'high' | 'medium';
+  title: string;
+  category: string;
+  summary: string;
+  kind: 'alert' | 'regime' | 'threshold' | 'jump' | 'correlation';
+};
+
+function correlationBg(value: number | null) {
+  if (value === null) return '#161616';
+  if (value >= 0.75) return '#14532D';
+  if (value >= 0.5) return '#166534';
+  if (value <= -0.75) return '#7F1D1D';
+  if (value <= -0.5) return '#991B1B';
+  return '#1A1A2E';
+}
+
+function correlationText(value: number | null) {
+  if (value === null) return '#555555';
+  if (value >= 0.5) return '#DCFCE7';
+  if (value <= -0.5) return '#FEE2E2';
+  return '#A5B4FC';
+}
+
+function pearson(valuesA: number[], valuesB: number[]) {
+  if (valuesA.length !== valuesB.length || valuesA.length < 3) return 0;
+  const meanA = valuesA.reduce((sum, v) => sum + v, 0) / valuesA.length;
+  const meanB = valuesB.reduce((sum, v) => sum + v, 0) / valuesB.length;
+  let numerator = 0;
+  let denomA = 0;
+  let denomB = 0;
+
+  for (let i = 0; i < valuesA.length; i += 1) {
+    const a = valuesA[i] - meanA;
+    const b = valuesB[i] - meanB;
+    numerator += a * b;
+    denomA += a * a;
+    denomB += b * b;
+  }
+
+  if (denomA === 0 || denomB === 0) return 0;
+  return numerator / Math.sqrt(denomA * denomB);
+}
+
+function buildChangeSeries(history: { date: string; score: number }[], days: number) {
+  const sliced = history.slice(-Math.max(days + 1, 8));
+  const changes: Array<{ date: string; value: number }> = [];
+
+  for (let i = 1; i < sliced.length; i += 1) {
+    changes.push({
+      date: sliced[i].date,
+      value: sliced[i].score - sliced[i - 1].score,
+    });
+  }
+
+  return changes.slice(-days);
+}
+
+function bestLagCorrelation(seriesA: number[], seriesB: number[]) {
+  let best = { correlation: 0, lag: 0 };
+
+  for (let lag = -7; lag <= 7; lag += 1) {
+    const alignedA: number[] = [];
+    const alignedB: number[] = [];
+
+    for (let i = 0; i < seriesA.length; i += 1) {
+      const j = i + lag;
+      if (j >= 0 && j < seriesB.length) {
+        alignedA.push(seriesA[i]);
+        alignedB.push(seriesB[j]);
+      }
+    }
+
+    const correlation = pearson(alignedA, alignedB);
+    if (Math.abs(correlation) > Math.abs(best.correlation)) {
+      best = { correlation, lag };
+    }
+  }
+
+  return best;
+}
+
+function priorityMeta(priority: TimelineEvent['priority']) {
+  if (priority === 'critical') return { dot: '#F87171', label: 'Kritik' };
+  if (priority === 'high') return { dot: '#FB923C', label: 'Yüksek' };
+  return { dot: '#FBBF24', label: 'Orta' };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1353,7 +1456,7 @@ function RegimeRadar({ categories }: { categories: DashboardData['categories'] }
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
-        icon={<Map className="w-4 h-4" />}
+        icon={<MapIcon className="w-4 h-4" />}
         title="Rejim Radar"
         accent="#60A5FA"
         right={<span className="text-[10px] font-mono text-[#666666]">6 eksen · 0–100</span>}
@@ -1489,7 +1592,7 @@ function RegionalRiskMap({ categories }: { categories: DashboardData['categories
   return (
     <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
       <PremiumPanelHeader
-        icon={<Map className="w-4 h-4" />}
+        icon={<MapIcon className="w-4 h-4" />}
         title="Bölgesel Risk Görünümü"
         accent="#FB923C"
       />
@@ -1527,6 +1630,470 @@ function RegionalRiskMap({ categories }: { categories: DashboardData['categories
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function CorrelationSignalPanel({
+  categories,
+  onSelectCategory,
+}: {
+  categories: DashboardData['categories'];
+  onSelectCategory: (id: string) => void;
+}) {
+  const [windowDays, setWindowDays] = useState<CorrelationWindow>(30);
+  const [selectedPairKey, setSelectedPairKey] = useState<string | null>(null);
+
+  const correlationData = useMemo(() => {
+    const MIN_HISTORY = 4;
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return { eligible: [], cells: [] as CorrelationCell[], signals: [] as CorrelationCell[], isDataSparse: true, maxDays: 0 };
+    }
+    const eligible = categories
+      .filter((cat) => Array.isArray(cat.history) && cat.history.length >= MIN_HISTORY)
+      .map((cat) => ({
+        ...cat,
+        scoreSeries: cat.history.slice(-windowDays).map((h: { date: string; score: number }) => h.score),
+      }))
+      .filter((cat) => cat.scoreSeries.length >= MIN_HISTORY);
+
+    const maxDays = eligible.length > 0
+      ? Math.max(...eligible.map((c) => c.history.length))
+      : 0;
+    const isDataSparse = maxDays < 14;
+
+    const cells: CorrelationCell[] = [];
+
+    for (let i = 0; i < eligible.length; i += 1) {
+      for (let j = 0; j < eligible.length; j += 1) {
+        const left = eligible[i];
+        const right = eligible[j];
+        if (i === j) {
+          cells.push({ key: `${left.id}-${right.id}`, leftId: left.id, rightId: right.id, leftName: left.name, rightName: right.name, correlation: 0, lag: 0 });
+          continue;
+        }
+        const { correlation, lag } = bestLagCorrelation(left.scoreSeries, right.scoreSeries);
+        cells.push({ key: `${left.id}-${right.id}`, leftId: left.id, rightId: right.id, leftName: left.name, rightName: right.name, correlation, lag });
+      }
+    }
+
+    const signals = cells
+      .filter((cell) => cell.leftId !== cell.rightId && Math.abs(cell.correlation) >= 0.4)
+      .sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+
+    return { eligible, cells, signals, isDataSparse, maxDays };
+  }, [categories, windowDays]);
+
+  const selectedPair = correlationData.cells.find((cell) => cell.key === selectedPairKey)
+    ?? correlationData.signals[0]
+    ?? null;
+
+  const leftCategory = selectedPair
+    ? categories.find((category) => category.id === selectedPair.leftId) ?? null
+    : null;
+  const rightCategory = selectedPair
+    ? categories.find((category) => category.id === selectedPair.rightId) ?? null
+    : null;
+
+  const detailData = useMemo(() => {
+    if (!leftCategory || !rightCategory) return [];
+    if (!Array.isArray(leftCategory.history) || !Array.isArray(rightCategory.history)) return [];
+    const leftMap = new Map(leftCategory.history.slice(-90).map((point) => [point.date, point.score]));
+    const rightMap = new Map(rightCategory.history.slice(-90).map((point) => [point.date, point.score]));
+    const dates = Array.from(new Set([...leftMap.keys(), ...rightMap.keys()])).sort();
+
+    return dates.map((date) => ({
+      date: date.slice(5),
+      left: leftMap.get(date) ?? null,
+      right: rightMap.get(date) ?? null,
+    }));
+  }, [leftCategory, rightCategory]);
+
+  return (
+    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+      <PremiumPanelHeader
+        icon={<Link2 className="w-4 h-4" />}
+        title="Korelasyon Sinyalleri"
+        accent="#D4A843"
+        right={
+          <div className="flex items-center gap-1">
+            {[30, 60, 90].map((days) => (
+              <button
+                key={days}
+                type="button"
+                onClick={() => setWindowDays(days as CorrelationWindow)}
+                className="rounded-sm border px-2 py-1 text-[10px] font-mono"
+                style={{
+                  color: windowDays === days ? '#F5E7B0' : '#777777',
+                  borderColor: windowDays === days ? '#6B5320' : '#2A2A2A',
+                  backgroundColor: windowDays === days ? '#1B1408' : '#0D0D0D',
+                }}
+              >
+                {days}D
+              </button>
+            ))}
+          </div>
+        }
+      />
+
+      <div className="p-4 space-y-4">
+          {correlationData.isDataSparse && correlationData.eligible.length >= 2 && (
+            <div className="rounded-sm border border-[#2A2000] bg-[#120E00] px-3 py-2 flex items-center gap-2">
+              <div className="text-[10px] font-mono text-[#A08040]">
+                ⚠ Erken aşama veri — {correlationData.maxDays} gün geçmişle hesaplanıyor. 14+ günde istatistiksel güven artar.
+              </div>
+            </div>
+          )}
+          {correlationData.eligible.length < 2 ? (
+            <div className="rounded-sm border border-[#1A1A1A] bg-[#0D0D0D] px-4 py-8 text-center">
+              <div className="text-[12px] text-[#555555] font-mono mb-1">Korelasyon matrisi için yeterli geçmiş veri bekleniyor.</div>
+              <div className="text-[11px] text-[#3A3A3A] font-mono">
+                {correlationData.eligible.length === 0
+                  ? `Henüz hiçbir kategori için ${4} günlük skor geçmişi oluşmadı.`
+                  : `Yalnızca ${correlationData.eligible.length} kategori yeterli geçmişe sahip; matris için en az 2 gerekli.`}
+              </div>
+            </div>
+          ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4">
+            <div className="rounded-sm border border-[#1A1A1A] bg-[#0D0F12] p-3 overflow-x-auto">
+              <div className="mb-2 text-[9px] font-mono text-[#444444] uppercase tracking-wider">Kategori × Kategori — Pearson r (lead-lag ±7g)</div>
+              <div
+                className="grid gap-[3px]"
+                style={{ gridTemplateColumns: `140px repeat(${correlationData.eligible.length}, minmax(22px, 1fr))`, minWidth: `${140 + correlationData.eligible.length * 26}px` }}
+              >
+                <div />
+                {correlationData.eligible.map((category) => (
+                  <div key={category.id} className="text-[9px] text-[#555555] truncate px-0.5 pb-1 border-b border-[#1A1A1A]">{category.name}</div>
+                ))}
+                {correlationData.eligible.map((row) => (
+                  <React.Fragment key={row.id}>
+                    <div className="text-[9px] text-[#555555] truncate pr-2 py-1 border-r border-[#1A1A1A]">{row.name}</div>
+                    {correlationData.eligible.map((column) => {
+                      const cell = correlationData.cells.find((item) => item.leftId === row.id && item.rightId === column.id) ?? null;
+                      const isDiagonal = row.id === column.id;
+                      const active = selectedPair?.key === cell?.key;
+                      const corr = cell?.correlation ?? null;
+                      return (
+                        <button
+                          key={`${row.id}-${column.id}`}
+                          type="button"
+                          onClick={() => cell && !isDiagonal && setSelectedPairKey(cell.key)}
+                          className="h-[22px] min-w-[22px] rounded-[2px] border text-[8px] font-mono transition-all hover:scale-110 hover:z-10 relative"
+                          style={{
+                            backgroundColor: isDiagonal ? '#0D0D0D' : correlationBg(corr),
+                            color: isDiagonal ? '#2A2A2A' : correlationText(corr),
+                            borderColor: active ? '#D4A843' : isDiagonal ? '#1A1A1A' : 'transparent',
+                            boxShadow: active ? '0 0 0 1px rgba(212,168,67,0.3)' : 'none',
+                            cursor: isDiagonal ? 'default' : 'pointer',
+                            outline: active ? '1px solid rgba(212,168,67,0.2)' : 'none',
+                          }}
+                          title={
+                            cell && !isDiagonal
+                              ? `${row.name} → ${column.name}\nr = ${cell.correlation.toFixed(3)}\nlag = ${cell.lag > 0 ? `+${cell.lag}` : cell.lag} gün`
+                              : ''
+                          }
+                        >
+                          {isDiagonal ? '' : corr !== null ? corr.toFixed(1) : '—'}
+                        </button>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center gap-3 flex-wrap">
+                <div className="text-[9px] text-[#444444] font-mono uppercase tracking-wider">Ölçek:</div>
+                {[
+                  { label: '≥0.75', bg: '#14532D', text: '#DCFCE7' },
+                  { label: '0.5–0.74', bg: '#166534', text: '#DCFCE7' },
+                  { label: '±0.5', bg: '#1A1A2E', text: '#555577' },
+                  { label: '-0.5–-0.74', bg: '#7F1D1D', text: '#FEE2E2' },
+                  { label: '≤-0.75', bg: '#991B1B', text: '#FEE2E2' },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-[1px]" style={{ backgroundColor: s.bg }} />
+                    <span className="text-[9px] font-mono" style={{ color: s.text }}>{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-sm border border-[#1A1A1A] bg-[#0D0D0D] p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#D4A843] mb-3">En Güçlü Lead-Lag Sinyalleri</div>
+              <div className="space-y-2">
+                {correlationData.signals.slice(0, 5).map((signal, index) => (
+                  <button
+                    key={signal.key}
+                    type="button"
+                    onClick={() => setSelectedPairKey(signal.key)}
+                    className={`w-full rounded-sm border px-3 py-2 text-left transition-colors ${selectedPair?.key === signal.key ? 'border-[#4A3A14] bg-[#1A1408]' : 'border-[#1A1A1A] bg-[#111111] hover:bg-[#141414]'}`}
+                  >
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#E5E5E5]">
+                      <span className="text-[#555555] font-mono w-3 shrink-0">{index + 1}</span>
+                      <span className="truncate min-w-0">{signal.leftName}</span>
+                      <span className="text-[#D4A843] shrink-0">→</span>
+                      <span className="truncate min-w-0">{signal.rightName}</span>
+                    </div>
+                    <div className="mt-1 text-[10px] font-mono text-[#777777]">
+                      {signal.lag > 0 ? `+${signal.lag}g gecikme` : signal.lag < 0 ? `${Math.abs(signal.lag)}g önden` : 'eşzamanlı'}
+                      {' · '}
+                      <span style={{ color: Math.abs(signal.correlation) >= 0.75 ? '#4ADE80' : Math.abs(signal.correlation) >= 0.5 ? '#A3A3A3' : '#555555' }}>
+                        r={signal.correlation.toFixed(2)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+                {correlationData.signals.length === 0 && (
+                  <div className="py-6 text-center">
+                    <div className="text-[12px] text-[#555555] font-mono">|r| ≥ 0.50 eşiğini geçen çift yok.</div>
+                    <div className="mt-1 text-[10px] text-[#3A3A3A] font-mono">{windowDays}G penceresi · {correlationData.eligible.length} kategori değerlendirildi</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          )}
+
+          {selectedPair && leftCategory && rightCategory && (
+            <div className="rounded-sm border border-[#1A1A1A] bg-[#0D0D0D] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div>
+                  <div className="text-[12px] text-[#E5E5E5] font-semibold">
+                    {selectedPair.leftName} → {selectedPair.rightName}
+                  </div>
+                  <div className="text-[11px] text-[#8A8A8A]">
+                    {selectedPair.lag > 0 ? `${selectedPair.lag} gün gecikme` : selectedPair.lag < 0 ? `${Math.abs(selectedPair.lag)} gün önden` : 'eşzamanlı'} • r={selectedPair.correlation.toFixed(2)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onSelectCategory(leftCategory.id)}
+                    className="rounded-sm border border-[#1F1F1F] bg-[#101010] px-2.5 py-1 text-[10px] text-[#A3A3A3] hover:text-[#E5E5E5]"
+                  >
+                    {leftCategory.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectCategory(rightCategory.id)}
+                    className="rounded-sm border border-[#1F1F1F] bg-[#101010] px-2.5 py-1 text-[10px] text-[#A3A3A3] hover:text-[#E5E5E5]"
+                  >
+                    {rightCategory.name}
+                  </button>
+                </div>
+              </div>
+              <div className="h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={detailData}>
+                    <XAxis dataKey="date" tick={{ fill: '#666666', fontSize: 10 }} axisLine={{ stroke: '#1F1F1F' }} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fill: '#666666', fontSize: 10 }} axisLine={{ stroke: '#1F1F1F' }} tickLine={false} width={36} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fill: '#666666', fontSize: 10 }} axisLine={{ stroke: '#1F1F1F' }} tickLine={false} width={36} />
+                    <RechartsTooltip
+                      contentStyle={{ background: '#090909', border: '1px solid #1F1F1F', borderRadius: 6 }}
+                      labelStyle={{ color: '#A3A3A3' }}
+                    />
+                    <Line yAxisId="left" type="monotone" dataKey="left" stroke="#D4A843" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="right" stroke="#60A5FA" strokeWidth={1.6} dot={false} strokeDasharray="5 4" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-3 text-[12px] text-[#9A9A9A] leading-relaxed">
+                {selectedPair.leftName} tarafındaki hareketler, {selectedPair.rightName} üzerinde
+                {' '}{selectedPair.lag > 0 ? `${selectedPair.lag} gün sonra` : selectedPair.lag < 0 ? `${Math.abs(selectedPair.lag)} gün önce` : 'aynı anda'}
+                {' '}benzer yönlü bir etki üretme eğiliminde. Bu sinyal tahmin değil; mevcut rejimde gözlenen ilişki haritasıdır.
+              </div>
+            </div>
+          )}
+      </div>
+    </div>
+  );
+}
+
+function AlertTimelinePanel({
+  alerts,
+  categories,
+  totalScore,
+}: {
+  alerts: DashboardData['alerts'];
+  categories: DashboardData['categories'];
+  totalScore: number | null;
+}) {
+  const [windowKey, setWindowKey] = useState<TimelineWindow>('24h');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  const events = useMemo(() => {
+    const derived: TimelineEvent[] = [];
+    const now = Date.now();
+
+    categories.forEach((category) => {
+      if (category.score === null) return;
+      if (category.score <= 30 || category.score >= 70) {
+        derived.push({
+          id: `threshold-${category.id}`,
+          timestamp: category.history?.at(-1)?.date ?? new Date(now).toISOString(),
+          priority: category.score <= 30 ? 'critical' : 'high',
+          title: `${category.name}: eşik kırılması`,
+          category: category.name,
+          summary: `${Math.round(category.score)} seviyesi ${category.score <= 30 ? '30 altına indi' : '70 üzerine çıktı'}.`,
+          kind: 'threshold',
+        });
+      }
+      if (category.change7d !== null && Math.abs(category.change7d) >= 8) {
+        derived.push({
+          id: `jump-${category.id}`,
+          timestamp: category.history?.at(-1)?.date ?? new Date(now - 6 * 60 * 60 * 1000).toISOString(),
+          priority: Math.abs(category.change7d) >= 10 ? 'critical' : 'high',
+          title: `${category.name}: skor sıçraması`,
+          category: category.name,
+          summary: `Son 7 günde ${category.change7d > 0 ? '+' : ''}${category.change7d.toFixed(1)} puan değişim görüldü.`,
+          kind: 'jump',
+        });
+      }
+    });
+
+    if (totalScore !== null && Math.abs(totalScore - 50) >= 10) {
+      derived.push({
+        id: 'mergen-index-shift',
+        timestamp: categories[0]?.history?.at(-1)?.date ?? new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+        priority: 'critical',
+        title: 'Mergen Endeksi belirgin rejim alanında',
+        category: 'Mergen Endeksi',
+        summary: `Toplam skor ${Math.round(totalScore)} seviyesinde; rejim tarafı belirginleşiyor.`,
+        kind: 'regime',
+      });
+    }
+
+    const baseAlerts = alerts.map((alert) => ({
+      id: alert.id,
+      timestamp: alert.created_at,
+      priority: alert.type === 'threshold' ? 'high' : alert.type === 'momentum' ? 'medium' : 'medium',
+      title: alert.message.split(':')[0] || 'Sistem uyarısı',
+      category: alert.message.split(':')[0] || 'Sistem',
+      summary: alert.message,
+      kind: alert.type === 'threshold' ? 'threshold' : alert.type === 'momentum' ? 'jump' : 'correlation',
+    })) as TimelineEvent[];
+
+    return [...baseAlerts, ...derived].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [alerts, categories, totalScore]);
+
+  const filteredEvents = useMemo(() => {
+    const now = Date.now();
+    const windowMs =
+      windowKey === '24h'
+        ? 24 * 60 * 60 * 1000
+        : windowKey === '48h'
+          ? 48 * 60 * 60 * 1000
+          : 7 * 24 * 60 * 60 * 1000;
+
+    return events.filter((event) => {
+      const matchesWindow = now - new Date(event.timestamp).getTime() <= windowMs;
+      const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+      return matchesWindow && matchesCategory;
+    });
+  }, [events, selectedCategory, windowKey]);
+
+  const counts = filteredEvents.reduce(
+    (acc, event) => {
+      acc.total += 1;
+      acc[event.priority] += 1;
+      return acc;
+    },
+    { total: 0, critical: 0, high: 0, medium: 0 },
+  );
+
+  return (
+    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+      <PremiumPanelHeader
+        icon={<BellRing className="w-4 h-4" />}
+        title="Alert Timeline"
+        accent="#D4A843"
+        right={
+          <div className="flex items-center gap-1">
+            {(['24h', '48h', '7d'] as TimelineWindow[]).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setWindowKey(item)}
+                className="rounded-sm border px-2 py-1 text-[10px] font-mono"
+                style={{
+                  color: windowKey === item ? '#F5E7B0' : '#777777',
+                  borderColor: windowKey === item ? '#6B5320' : '#2A2A2A',
+                  backgroundColor: windowKey === item ? '#1B1408' : '#0D0D0D',
+                }}
+              >
+                {item === '7d' ? '7 Gün' : item === '48h' ? '48 Saat' : '24 Saat'}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      <div className="p-4 space-y-4">
+        <div className="rounded-sm border border-[#1A1A1A] bg-[#0D0D0D] px-4 py-3 flex flex-wrap items-center gap-3 text-[12px]">
+          <span className="text-[#D4D4D4]">{counts.total} alert</span>
+          <span className="text-[#F87171]">{counts.critical} kritik</span>
+          <span className="text-[#FB923C]">{counts.high} yüksek</span>
+          <span className="text-[#FBBF24]">{counts.medium} orta</span>
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+            className="ml-auto rounded-sm border border-[#1F1F1F] bg-[#111111] px-2 py-1 text-[11px] text-[#A3A3A3]"
+          >
+            <option value="all">Tüm kategoriler</option>
+            {Array.from(new Set(events.map((event) => event.category))).map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="max-h-[420px] overflow-y-auto pr-1">
+          {filteredEvents.length === 0 ? (
+            <div className="py-8 text-center text-[13px] text-[#666666]">Son seçili pencere içinde kritik sinyal yok. Piyasa sakin.</div>
+          ) : (
+            <div className="relative pl-5">
+              <div className="absolute left-[7px] top-0 bottom-0 w-px bg-[#FFFFFF15]" />
+              <div className="space-y-3">
+                {filteredEvents.slice(0, 20).map((event) => {
+                  const meta = priorityMeta(event.priority);
+                  const isRead = readIds.has(event.id);
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => setReadIds((current) => new Set(current).add(event.id))}
+                      className="w-full text-left"
+                    >
+                      <div
+                        className="relative rounded-sm border bg-[#0D0D0D] px-4 py-3 transition-all hover:bg-[#121212]"
+                        style={{
+                          opacity: isRead ? 0.5 : 1,
+                          borderColor: '#1A1A1A',
+                          boxShadow: isRead ? 'none' : `inset 3px 0 0 ${meta.dot}`,
+                        }}
+                      >
+                        <div className="absolute -left-[17px] top-4 h-2 w-2 rounded-full" style={{ backgroundColor: meta.dot, boxShadow: event.priority === 'critical' ? `0 0 8px ${meta.dot}` : 'none' }} />
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <div className="text-[12px] font-semibold text-[#E5E5E5]">{event.title}</div>
+                            <div className="mt-1 text-[11px] text-[#8A8A8A]">{event.summary}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[10px] font-mono text-[#777777]">
+                              {new Date(event.timestamp).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                            <div className="mt-1 text-[10px] font-mono" style={{ color: meta.dot }}>
+                              {meta.label}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1716,6 +2283,8 @@ export function HomePage({
         onSelectCategory={onSelectCategory}
       />
 
+      <CorrelationSignalPanel categories={categories} onSelectCategory={onSelectCategory} />
+
       {/* ─── Küresel Piyasa Haritası ─────────────────────── */}
       <WorldMap categories={categories} onSelectCategory={onSelectCategory} />
 
@@ -1730,6 +2299,12 @@ export function HomePage({
         <ReadingFlow totalScore={totalScore} categories={categories} onSelectCategory={onSelectCategory} />
         <RegionalRiskMap categories={categories} />
       </div>
+
+      <AlertTimelinePanel
+        alerts={alerts}
+        categories={categories}
+        totalScore={totalScore}
+      />
 
       {/* ─── Son Sapmalar ────────────────────────────────── */}
       <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">

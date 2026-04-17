@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Instrument Serif", Georgia, serif;
   
   --color-bg-main: #0A0A0A;
   --color-bg-card: #111111;
@@ -255,6 +256,717 @@ html[data-theme='light'] .bg-\[\#140B0B\] {
 
 html[data-theme='light'] .bg-\[\#140E0A\] {
   background-color: #fff0e4 !important;
+}
+
+html[data-theme='modern'] {
+  --modern-bg-base: #09090b;
+  --modern-bg-surface: #111114;
+  --modern-bg-elevated: #18181c;
+  --modern-bg-sunken: #060608;
+  --modern-accent: #c47a2e;
+  --modern-accent-muted: #8b5a1e;
+  --modern-accent-subtle: rgba(196, 122, 46, 0.08);
+  --modern-accent-glow: rgba(196, 122, 46, 0.15);
+  --modern-positive: #3d9a50;
+  --modern-positive-bg: rgba(61, 154, 80, 0.08);
+  --modern-negative: #c23b3b;
+  --modern-negative-bg: rgba(194, 59, 59, 0.08);
+  --modern-warning: #d49b2a;
+  --modern-info: #4a8ec2;
+  --modern-text-primary: #e8e4df;
+  --modern-text-secondary: #8a8680;
+  --modern-text-tertiary: #5c5854;
+  --modern-border: rgba(255, 255, 255, 0.06);
+  --modern-border-hover: rgba(255, 255, 255, 0.12);
+  --modern-divider: rgba(255, 255, 255, 0.04);
+}
+
+html[data-theme='modern'] body {
+  position: relative;
+  background-color: var(--modern-bg-base);
+  color: var(--modern-text-primary);
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(circle at top left, rgba(196, 122, 46, 0.08), transparent 32%),
+    radial-gradient(circle at top right, rgba(74, 142, 194, 0.06), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, transparent 100%);
+}
+
+html[data-theme='modern'] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.028;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+html[data-theme='modern'] * {
+  scrollbar-color: #3a3028 var(--modern-bg-sunken);
+}
+
+html[data-theme='modern'] *::-webkit-scrollbar-track {
+  background: var(--modern-bg-sunken);
+}
+
+html[data-theme='modern'] *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4f3a26 0%, #392919 100%);
+  border-color: var(--modern-bg-sunken);
+  border-radius: 999px;
+}
+
+html[data-theme='modern'] *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6a4a30 0%, #4a321e 100%);
+}
+
+html[data-theme='modern'] *::-webkit-scrollbar-corner {
+  background: var(--modern-bg-sunken);
+}
+
+html[data-theme='modern'] .bg-\[\#0A0A0A\] {
+  background-color: var(--modern-bg-base) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#111111\] {
+  background-color: var(--modern-bg-surface) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#141414\] {
+  background-color: var(--modern-bg-elevated) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#0D0D0D\] {
+  background-color: var(--modern-bg-sunken) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#1F1F1F\] {
+  background-color: #1b1b20 !important;
+}
+
+html[data-theme='modern'] .border-\[\#1F1F1F\] {
+  border-color: var(--modern-border) !important;
+}
+
+html[data-theme='modern'] .text-\[\#E5E5E5\],
+html[data-theme='modern'] .text-\[\#F5F5F5\] {
+  color: var(--modern-text-primary) !important;
+}
+
+html[data-theme='modern'] .text-\[\#D4D4D4\],
+html[data-theme='modern'] .text-\[\#A3A3A3\] {
+  color: var(--modern-text-secondary) !important;
+}
+
+html[data-theme='modern'] .text-\[\#666666\],
+html[data-theme='modern'] .text-\[\#5A5A5A\],
+html[data-theme='modern'] .text-\[\#555555\],
+html[data-theme='modern'] .text-\[\#4A4A4A\] {
+  color: var(--modern-text-tertiary) !important;
+}
+
+html[data-theme='modern'] .text-\[\#4ADE80\] {
+  color: var(--modern-positive) !important;
+}
+
+html[data-theme='modern'] .text-\[\#F87171\] {
+  color: var(--modern-negative) !important;
+}
+
+html[data-theme='modern'] .text-\[\#FBBF24\],
+html[data-theme='modern'] .text-\[\#F5E7B0\] {
+  color: var(--modern-accent) !important;
+}
+
+html[data-theme='modern'] .text-\[\#60A5FA\] {
+  color: var(--modern-info) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#102014\],
+html[data-theme='modern'] .bg-\[\#0D120D\] {
+  background-color: var(--modern-positive-bg) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#1B0E0E\],
+html[data-theme='modern'] .bg-\[\#140B0B\] {
+  background-color: var(--modern-negative-bg) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#1A160B\],
+html[data-theme='modern'] .bg-\[\#120F0A\],
+html[data-theme='modern'] .bg-\[\#140E0A\],
+html[data-theme='modern'] .bg-\[\#1D130B\] {
+  background-color: rgba(212, 155, 42, 0.08) !important;
+}
+
+html[data-theme='modern'] .border-\[\#16351F\] {
+  border-color: rgba(61, 154, 80, 0.28) !important;
+}
+
+html[data-theme='modern'] .border-\[\#3F1818\] {
+  border-color: rgba(194, 59, 59, 0.28) !important;
+}
+
+html[data-theme='modern'] .border-\[\#3C3113\],
+html[data-theme='modern'] .border-\[\#402313\] {
+  border-color: rgba(196, 122, 46, 0.32) !important;
+}
+
+html[data-theme='modern'] .rounded-sm {
+  border-radius: 2px !important;
+}
+
+html[data-theme='modern'] .font-mono,
+html[data-theme='modern'] .tabular-nums {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme='modern'] .app-sidebar {
+  background-color: var(--modern-bg-sunken) !important;
+  border-right-color: var(--modern-divider) !important;
+}
+
+html[data-theme='modern'] .app-brand {
+  border-bottom-color: var(--modern-divider) !important;
+}
+
+html[data-theme='modern'] .app-brand .font-semibold {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+html[data-theme='modern'] .app-topbar {
+  background-color: var(--modern-bg-base) !important;
+  border-bottom-color: var(--modern-divider) !important;
+}
+
+html[data-theme='modern'] .market-status-pill {
+  background: transparent !important;
+  border-color: transparent !important;
+  padding-inline: 0.15rem !important;
+}
+
+html[data-theme='modern'] .topbar-search,
+html[data-theme='modern'] .lang-trigger {
+  background-color: var(--modern-bg-sunken) !important;
+  border-color: var(--modern-border) !important;
+}
+
+html[data-theme='modern'] .topbar-update {
+  color: var(--modern-text-tertiary) !important;
+}
+
+html[data-theme='modern'] .nav-item {
+  border-left: 2px solid transparent;
+  background: transparent !important;
+  color: var(--modern-text-secondary) !important;
+  transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+}
+
+html[data-theme='modern'] .nav-item:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--modern-text-primary) !important;
+}
+
+html[data-theme='modern'] .nav-item.is-active {
+  color: var(--modern-text-primary) !important;
+  border-left-color: var(--modern-accent) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme='modern'] .nav-item.is-active::before,
+html[data-theme='modern'] .nav-item.is-active::after {
+  display: none !important;
+}
+
+html[data-theme='modern'] .nav-item .bg-\[\#1F1F1F\] {
+  background: transparent !important;
+  border: 1px solid var(--modern-border);
+  color: var(--modern-text-tertiary) !important;
+}
+
+html[data-theme='modern'] .nav-item.is-active .bg-\[\#2A1F08\] {
+  background: transparent !important;
+  border: 1px solid rgba(196, 122, 46, 0.25);
+  color: var(--modern-accent) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme='modern'] .sidebar-social-link {
+  color: var(--modern-text-tertiary) !important;
+}
+
+html[data-theme='modern'] .sidebar-social-link:hover {
+  color: var(--modern-accent) !important;
+}
+
+html[data-theme='modern'] .premium-panel-header {
+  border-bottom-color: var(--modern-divider) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.012) 0%, transparent 100%),
+    linear-gradient(90deg, rgba(196, 122, 46, 0.06) 0%, transparent 22%) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme='modern'] .premium-panel-header > .absolute:first-child {
+  height: 1px !important;
+  background: linear-gradient(90deg, var(--modern-accent) 0%, rgba(196, 122, 46, 0.32) 100%) !important;
+}
+
+html[data-theme='modern'] .premium-panel-header__icon {
+  background: transparent !important;
+  border-color: var(--modern-border) !important;
+  color: var(--modern-accent) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme='modern'] .premium-panel-header__eyebrow {
+  position: relative;
+  padding: 0 0 0 18px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--modern-text-primary) !important;
+  font-family: "Instrument Serif", Georgia, serif !important;
+  font-size: 20px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme='modern'] .premium-panel-header__eyebrow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--modern-accent);
+}
+
+html[data-theme='modern'] .premium-panel-header__subtitle {
+  color: var(--modern-text-tertiary) !important;
+  font-family: "DM Sans", ui-sans-serif, sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+
+html[data-theme='modern'] .premium-panel-header__right {
+  color: var(--modern-text-tertiary);
+}
+
+html[data-theme='modern'] .premium-panel-header__right button {
+  border-color: var(--modern-border) !important;
+  background: transparent !important;
+  color: var(--modern-text-tertiary) !important;
+}
+
+html[data-theme='modern'] .premium-panel-header__right button:hover {
+  border-color: rgba(196, 122, 46, 0.24) !important;
+  color: var(--modern-text-primary) !important;
+}
+
+html[data-theme='modern'] .premium-panel-header__right button[style*='#1B1408'] {
+  background: var(--modern-accent-subtle) !important;
+  border-color: rgba(196, 122, 46, 0.28) !important;
+  color: var(--modern-accent) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#111111\].border-\[\#1F1F1F\] {
+  box-shadow: inset 0 1px 0 rgba(196, 122, 46, 0.18);
+}
+
+html[data-theme='modern'] .hover\:bg-\[\#111111\]:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-theme='modern'] .hover\:bg-\[\#141414\]:hover {
+  background-color: var(--modern-bg-elevated) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   MODERN THEME — EXTENDED COVERAGE (all pages)
+   Covers: category pages, crypto, prediction, news, settings
+   ══════════════════════════════════════════════════════ */
+
+/* ── Extra background colours ── */
+
+/* Very dark accent-tinted backgrounds → sunken */
+html[data-theme='modern'] .bg-\[\#0A1216\],
+html[data-theme='modern'] .bg-\[\#0B0C0D\],
+html[data-theme='modern'] .bg-\[\#0B1014\],
+html[data-theme='modern'] .bg-\[\#0B1015\],
+html[data-theme='modern'] .bg-\[\#0B1115\],
+html[data-theme='modern'] .bg-\[\#0B1216\],
+html[data-theme='modern'] .bg-\[\#0B120B\],
+html[data-theme='modern'] .bg-\[\#0B120E\],
+html[data-theme='modern'] .bg-\[\#0B120F\],
+html[data-theme='modern'] .bg-\[\#0B1510\],
+html[data-theme='modern'] .bg-\[\#0C0C0C\],
+html[data-theme='modern'] .bg-\[\#0C120B\],
+html[data-theme='modern'] .bg-\[\#0D0908\] {
+  background-color: var(--modern-bg-sunken) !important;
+}
+
+/* Blue-tinted dark surface */
+html[data-theme='modern'] .bg-\[\#0D1420\],
+html[data-theme='modern'] .bg-\[\#0B1520\],
+html[data-theme='modern'] .bg-\[\#0B1115\] {
+  background-color: rgba(74, 142, 194, 0.08) !important;
+}
+
+/* Green-tinted dark surface */
+html[data-theme='modern'] .bg-\[\#0D1A0D\],
+html[data-theme='modern'] .bg-\[\#0A1A0F\] {
+  background-color: rgba(61, 154, 80, 0.08) !important;
+}
+
+/* Accent-tinted surface-level backgrounds → bg-surface */
+html[data-theme='modern'] .bg-\[\#0E141B\],
+html[data-theme='modern'] .bg-\[\#0E1713\],
+html[data-theme='modern'] .bg-\[\#0E171C\],
+html[data-theme='modern'] .bg-\[\#0E1A13\],
+html[data-theme='modern'] .bg-\[\#0F0D18\],
+html[data-theme='modern'] .bg-\[\#0F1114\],
+html[data-theme='modern'] .bg-\[\#101317\],
+html[data-theme='modern'] .bg-\[\#101812\],
+html[data-theme='modern'] .bg-\[\#100D18\],
+html[data-theme='modern'] .bg-\[\#120D18\] {
+  background-color: var(--modern-bg-surface) !important;
+}
+
+/* Amber elevated backgrounds */
+html[data-theme='modern'] .bg-\[\#110D08\],
+html[data-theme='modern'] .bg-\[\#120D08\],
+html[data-theme='modern'] .bg-\[\#140F08\],
+html[data-theme='modern'] .bg-\[\#141008\],
+html[data-theme='modern'] .bg-\[\#141108\],
+html[data-theme='modern'] .bg-\[\#151008\],
+html[data-theme='modern'] .bg-\[\#151009\],
+html[data-theme='modern'] .bg-\[\#151107\],
+html[data-theme='modern'] .bg-\[\#160C06\],
+html[data-theme='modern'] .bg-\[\#161008\],
+html[data-theme='modern'] .bg-\[\#171006\],
+html[data-theme='modern'] .bg-\[\#1A150A\],
+html[data-theme='modern'] .bg-\[\#1D1409\],
+html[data-theme='modern'] .bg-\[\#3A2D12\],
+html[data-theme='modern'] .bg-\[\#3B2910\] {
+  background-color: rgba(196, 122, 46, 0.08) !important;
+}
+
+/* Nav active bg */
+html[data-theme='modern'] .bg-\[\#14110A\] {
+  background-color: rgba(196, 122, 46, 0.10) !important;
+}
+
+/* Red/negative elevated backgrounds */
+html[data-theme='modern'] .bg-\[\#130808\],
+html[data-theme='modern'] .bg-\[\#150B0E\],
+html[data-theme='modern'] .bg-\[\#170C0B\],
+html[data-theme='modern'] .bg-\[\#170D0D\],
+html[data-theme='modern'] .bg-\[\#180808\],
+html[data-theme='modern'] .bg-\[\#1A0D0D\],
+html[data-theme='modern'] .bg-\[\#1A0F0F\],
+html[data-theme='modern'] .bg-\[\#1A0F12\],
+html[data-theme='modern'] .bg-\[\#1E100F\],
+html[data-theme='modern'] .bg-\[\#1E0F0D\] {
+  background-color: rgba(194, 59, 59, 0.08) !important;
+}
+
+/* Generic intermediate/elevated backgrounds */
+html[data-theme='modern'] .bg-\[\#1A1A1A\],
+html[data-theme='modern'] .bg-\[\#1B1B1B\],
+html[data-theme='modern'] .bg-\[\#1C2024\],
+html[data-theme='modern'] .bg-\[\#1E1E1E\],
+html[data-theme='modern'] .bg-\[\#2A2A2A\],
+html[data-theme='modern'] .bg-\[\#1F3651\] {
+  background-color: var(--modern-bg-elevated) !important;
+}
+
+/* Crypto page specific dark backgrounds */
+html[data-theme='modern'] .bg-\[\#0C0C0C\] {
+  background-color: var(--modern-bg-base) !important;
+}
+
+/* ── Extra text colours ── */
+
+/* Slightly bright secondary text */
+html[data-theme='modern'] .text-\[\#C0C0C0\],
+html[data-theme='modern'] .text-\[\#B0B0B0\],
+html[data-theme='modern'] .text-\[\#AAAAAA\],
+html[data-theme='modern'] .text-\[\#A8A8A8\],
+html[data-theme='modern'] .text-\[\#A9A9A9\] {
+  color: var(--modern-text-secondary) !important;
+}
+
+html[data-theme='modern'] .text-\[\#9A9A9A\],
+html[data-theme='modern'] .text-\[\#888888\],
+html[data-theme='modern'] .text-\[\#8A8A8A\],
+html[data-theme='modern'] .text-\[\#7A7A7A\],
+html[data-theme='modern'] .text-\[\#777777\] {
+  color: var(--modern-text-secondary) !important;
+}
+
+/* Dark near-invisible text → tertiary */
+html[data-theme='modern'] .text-\[\#3A3A3A\],
+html[data-theme='modern'] .text-\[\#333333\],
+html[data-theme='modern'] .text-\[\#2A2A2A\] {
+  color: var(--modern-text-tertiary) !important;
+}
+
+/* Positive (green) text variations → modern positive */
+html[data-theme='modern'] .text-\[\#8EE6AB\],
+html[data-theme='modern'] .text-\[\#BBF7D0\],
+html[data-theme='modern'] .text-\[\#86EFAC\],
+html[data-theme='modern'] .text-\[\#6EE7B7\] {
+  color: var(--modern-positive) !important;
+}
+
+/* Negative (red) text variations → modern negative */
+html[data-theme='modern'] .text-\[\#F2A4A4\],
+html[data-theme='modern'] .text-\[\#FECACA\] {
+  color: var(--modern-negative) !important;
+}
+
+/* Info (blue) text variations */
+html[data-theme='modern'] .text-\[\#7DD3FC\],
+html[data-theme='modern'] .text-\[\#67E8F9\],
+html[data-theme='modern'] .text-\[\#5EEAD4\],
+html[data-theme='modern'] .text-\[\#93C5FD\] {
+  color: var(--modern-info) !important;
+}
+
+/* Orange → copper accent */
+html[data-theme='modern'] .text-\[\#FB923C\] {
+  color: var(--modern-accent) !important;
+}
+
+/* Amber/gold → warning */
+html[data-theme='modern'] .text-\[\#FDBA74\],
+html[data-theme='modern'] .text-\[\#FACC15\] {
+  color: var(--modern-warning) !important;
+}
+
+/* Warm bright text (gold/cream) → primary */
+html[data-theme='modern'] .text-\[\#D6B76A\],
+html[data-theme='modern'] .text-\[\#F8E7B0\],
+html[data-theme='modern'] .text-\[\#E5EEF9\] {
+  color: var(--modern-text-primary) !important;
+}
+
+/* Purple/pink - keep identifiable but mute slightly */
+html[data-theme='modern'] .text-\[\#A78BFA\],
+html[data-theme='modern'] .text-\[\#C084FC\] {
+  color: #a07ad8 !important;
+}
+
+html[data-theme='modern'] .text-\[\#F472B6\] {
+  color: #c96aa8 !important;
+}
+
+/* ── Extra border colours ── */
+
+/* Generic dark borders */
+html[data-theme='modern'] .border-\[\#1A1A1A\] {
+  border-color: var(--modern-divider) !important;
+}
+
+html[data-theme='modern'] .border-\[\#2A2A2A\],
+html[data-theme='modern'] .border-\[\#2D2D2D\],
+html[data-theme='modern'] .border-\[\#2A1A1A\] {
+  border-color: var(--modern-border) !important;
+}
+
+html[data-theme='modern'] .border-\[\#3A3A3A\] {
+  border-color: var(--modern-border-hover) !important;
+}
+
+/* Blue/info tinted borders */
+html[data-theme='modern'] .border-\[\#223043\],
+html[data-theme='modern'] .border-\[\#213040\],
+html[data-theme='modern'] .border-\[\#1A3140\],
+html[data-theme='modern'] .border-\[\#1D2C44\],
+html[data-theme='modern'] .border-\[\#26303B\],
+html[data-theme='modern'] .border-\[\#2A3340\],
+html[data-theme='modern'] .border-\[\#1A2533\],
+html[data-theme='modern'] .border-\[\#2B4C72\],
+html[data-theme='modern'] .border-\[\#1D3640\],
+html[data-theme='modern'] .border-\[\#203547\],
+html[data-theme='modern'] .border-\[\#18313C\] {
+  border-color: rgba(74, 142, 194, 0.28) !important;
+}
+
+/* Green/positive tinted borders */
+html[data-theme='modern'] .border-\[\#1A2E1A\],
+html[data-theme='modern'] .border-\[\#183722\],
+html[data-theme='modern'] .border-\[\#173325\],
+html[data-theme='modern'] .border-\[\#1E341C\],
+html[data-theme='modern'] .border-\[\#213A2E\],
+html[data-theme='modern'] .border-\[\#1E3C2E\] {
+  border-color: rgba(61, 154, 80, 0.28) !important;
+}
+
+/* Red/negative tinted borders */
+html[data-theme='modern'] .border-\[\#2A1010\],
+html[data-theme='modern'] .border-\[\#3B1C1C\] {
+  border-color: rgba(194, 59, 59, 0.28) !important;
+}
+
+/* Amber/orange tinted borders */
+html[data-theme='modern'] .border-\[\#2A1F10\],
+html[data-theme='modern'] .border-\[\#3B2910\],
+html[data-theme='modern'] .border-\[\#4B3A12\],
+html[data-theme='modern'] .border-\[\#4A3415\],
+html[data-theme='modern'] .border-\[\#4A221C\],
+html[data-theme='modern'] .border-\[\#3A2D12\],
+html[data-theme='modern'] .border-\[\#3B3116\],
+html[data-theme='modern'] .border-\[\#473210\] {
+  border-color: rgba(196, 122, 46, 0.28) !important;
+}
+
+/* Purple tinted borders */
+html[data-theme='modern'] .border-\[\#2A2240\],
+html[data-theme='modern'] .border-\[\#36214A\],
+html[data-theme='modern'] .border-\[\#2A1F40\],
+html[data-theme='modern'] .border-\[\#31233E\],
+html[data-theme='modern'] .border-\[\#2B233E\],
+html[data-theme='modern'] .border-\[\#421D25\] {
+  border-color: rgba(130, 90, 200, 0.28) !important;
+}
+
+/* ── Rounded corners — enforce sharp edges ── */
+
+html[data-theme='modern'] .rounded-lg,
+html[data-theme='modern'] .rounded-md,
+html[data-theme='modern'] .rounded {
+  border-radius: 2px !important;
+}
+
+/* ── Hover overrides ── */
+html[data-theme='modern'] .hover\:bg-\[\#0D0D0D\]:hover {
+  background-color: var(--modern-bg-elevated) !important;
+}
+
+/* ── Select/input elements ── */
+html[data-theme='modern'] select {
+  background-color: var(--modern-bg-sunken) !important;
+  border-color: var(--modern-border) !important;
+  color: var(--modern-text-primary) !important;
+}
+
+/* ── Category score indicator badges ── */
+/* Ensure score-toned elements look right in modern theme */
+html[data-theme='modern'] .border-\[\#16351F\].bg-\[\#0D120D\],
+html[data-theme='modern'] .border-\[\#16351F\] {
+  border-color: rgba(61, 154, 80, 0.28) !important;
+}
+
+html[data-theme='modern'] .bg-\[\#0D120D\] {
+  background-color: rgba(61, 154, 80, 0.07) !important;
+}
+
+/* ── Pulse animation dot override ── */
+html[data-theme='modern'] .bg-\[\#4ADE80\].animate-pulse {
+  background-color: var(--modern-positive) !important;
+}
+
+/* ── 3-digit hex shorthand overrides ── */
+html[data-theme='modern'] .text-\[\#555\] {
+  color: var(--modern-text-tertiary) !important;
+}
+
+html[data-theme='modern'] .text-\[\#444\] {
+  color: var(--modern-text-tertiary) !important;
+}
+
+/* ── Additional nuanced text colours ── */
+html[data-theme='modern'] .text-\[\#484848\],
+html[data-theme='modern'] .text-\[\#4F4F4F\],
+html[data-theme='modern'] .text-\[\#505050\],
+html[data-theme='modern'] .text-\[\#444444\] {
+  color: var(--modern-text-tertiary) !important;
+}
+
+/* Muted green text (sub-accent) */
+html[data-theme='modern'] .text-\[\#4A8A4A\] {
+  color: var(--modern-positive) !important;
+}
+
+/* Closed-market red text */
+html[data-theme='modern'] .text-\[\#8B3030\] {
+  color: rgba(194, 59, 59, 0.6) !important;
+}
+
+/* ── Additional background colours ── */
+
+/* Admin/Home green indicator bg */
+html[data-theme='modern'] .bg-\[\#0A1A0A\],
+html[data-theme='modern'] .bg-\[\#0A140A\],
+html[data-theme='modern'] .bg-\[\#142818\] {
+  background-color: rgba(61, 154, 80, 0.08) !important;
+}
+
+/* Market status pill backgrounds (closed state) */
+html[data-theme='modern'] .bg-\[\#130808\] {
+  background-color: rgba(194, 59, 59, 0.08) !important;
+}
+
+/* Additional border colours */
+html[data-theme='modern'] .border-\[\#1F3A1F\],
+html[data-theme='modern'] .border-\[\#1A3A1A\] {
+  border-color: rgba(61, 154, 80, 0.28) !important;
+}
+
+html[data-theme='modern'] .border-\[\#0A1A0A\] {
+  border-color: rgba(61, 154, 80, 0.2) !important;
+}
+
+/* Closed market pill border */
+html[data-theme='modern'] .border-\[\#2A1010\] {
+  border-color: rgba(194, 59, 59, 0.2) !important;
+}
+
+/* ── WeeklyReports & AdminPanel overrides ── */
+html[data-theme='modern'] .hover\:text-\[\#AAAAAA\]:hover {
+  color: var(--modern-text-secondary) !important;
+}
+
+html[data-theme='modern'] .hover\:text-\[\#6EF0A0\]:hover {
+  color: var(--modern-positive) !important;
+}
+
+/* ── CryptoPage specific backgrounds ── */
+html[data-theme='modern'] .bg-\[\#101010\],
+html[data-theme='modern'] .bg-\[\#0C0C12\],
+html[data-theme='modern'] .bg-\[\#131416\] {
+  background-color: var(--modern-bg-surface) !important;
+}
+
+/* ── Additional text shades ── */
+html[data-theme='modern'] .text-\[\#8F8F8F\],
+html[data-theme='modern'] .text-\[\#909090\] {
+  color: var(--modern-text-secondary) !important;
+}
+
+/* ── Gradient background overrides for bg-linear-gradient classes ── */
+/* These Tailwind utility classes use bracketed gradient syntax */
+html[data-theme='modern'] .bg-\[linear-gradient\(135deg\,rgba\(59\,130\,246\,0\.14\)_0\%\,rgba\(14\,23\,34\,0\.96\)_42\%\,rgba\(10\,12\,16\,0\.98\)_100\%\)\] {
+  background-color: rgba(74, 142, 194, 0.08) !important;
+  background-image: none !important;
+}
+
+/* ── MetricCard border-left color strip for modern taste ── */
+/* Top stripe already gets the trendAccent color via inline style — no override needed */
+
+/* ── Favorite button overrides ── */
+html[data-theme='modern'] .border-\[\#4B3A12\].bg-\[\#1A160B\] {
+  background-color: rgba(196, 122, 46, 0.10) !important;
+  border-color: rgba(196, 122, 46, 0.32) !important;
 }
 
 html[data-density='compact'] body {

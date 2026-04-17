@@ -170,13 +170,13 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
   }, [isLanguageMenuOpen]);
 
   return (
-    <div className="flex h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans overflow-hidden">
+    <div className="app-shell flex h-screen bg-[#0A0A0A] text-[#E5E5E5] font-sans overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-[320px] shrink-0 border-r border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
+      <aside className="app-sidebar w-[320px] shrink-0 border-r border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
         <button
           type="button"
           onClick={() => onSelectCategory && onSelectCategory('home')}
-          className="px-4 h-[44px] border-b border-[#1F1F1F] flex items-center gap-3 text-left hover:bg-[#111111] transition-colors shrink-0"
+          className="app-brand px-4 h-[44px] border-b border-[#1F1F1F] flex items-center gap-3 text-left hover:bg-[#111111] transition-colors shrink-0"
         >
           <Hexagon className="w-4 h-4 text-[#A3A3A3] shrink-0" />
           <div className="min-w-0 relative inline-flex items-start">
@@ -311,7 +311,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
                   rel="noreferrer"
                   aria-label={item.label}
                   title={item.label}
-                  className="flex h-4 w-4 items-center justify-center text-[#7A7A7A] transition-colors hover:text-[#E5E5E5]"
+                  className="sidebar-social-link flex h-4 w-4 items-center justify-center text-[#7A7A7A] transition-colors hover:text-[#E5E5E5]"
                 >
                   {item.icon}
                 </a>
@@ -324,7 +324,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
-        <header className="border-b border-[#1F1F1F] px-5 h-[44px] shrink-0 bg-[#0A0A0A] flex items-center">
+        <header className="app-topbar border-b border-[#1F1F1F] px-5 h-[44px] shrink-0 bg-[#0A0A0A] flex items-center">
           <div className="flex items-center gap-3 w-full">
 
             {/* Market status badges */}
@@ -332,7 +332,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
               {marketStatuses.map((market) => (
                 <div
                   key={market.label}
-                  className={`flex items-center gap-1.5 rounded-sm border px-2 py-1 ${
+                  className={`market-status-pill flex items-center gap-1.5 rounded-sm border px-2 py-1 ${
                     market.isOpen ? 'border-[#1A1A1A] bg-[#0D0D0D]' : 'border-[#2A1010] bg-[#130808]'
                   }`}
                 >
@@ -362,7 +362,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
                 <button
                   type="button"
                   onClick={onOpenSearch}
-                  className="w-full max-w-xs flex items-center justify-between gap-2 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2.5 py-1.5 text-[11px] text-[#5A5A5A] hover:text-[#888888] hover:border-[#2A2A2A] transition-colors"
+                  className="topbar-search w-full max-w-xs flex items-center justify-between gap-2 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2.5 py-1.5 text-[11px] text-[#5A5A5A] hover:text-[#888888] hover:border-[#2A2A2A] transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <Search className="w-3 h-3" />
@@ -371,7 +371,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
                   <span className="rounded-sm border border-[#1F1F1F] bg-[#111111] px-1.5 py-0.5 text-[9px] font-mono text-[#4A4A4A]">⌘K</span>
                 </button>
               ) : (
-                <div className="w-full max-w-xs flex items-center gap-2 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2.5 py-1.5">
+                <div className="topbar-search w-full max-w-xs flex items-center gap-2 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2.5 py-1.5">
                   <Search className="w-3 h-3 text-[#4A4A4A] shrink-0" />
                   <input
                     type="text"
@@ -392,7 +392,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
                 <button
                   type="button"
                   onClick={() => setIsLanguageMenuOpen((open) => !open)}
-                  className="flex items-center gap-1.5 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1.5 text-[11px] text-[#6A6A6A] hover:text-[#A3A3A3] hover:border-[#2A2A2A] transition-colors"
+                  className="lang-trigger flex items-center gap-1.5 rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-2 py-1.5 text-[11px] text-[#6A6A6A] hover:text-[#A3A3A3] hover:border-[#2A2A2A] transition-colors"
                 >
                   <span className="text-sm leading-none">🇹🇷</span>
                   <span className="text-[10px] uppercase tracking-wider font-mono">TR</span>
@@ -427,7 +427,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
               </div>
 
               {/* Last update */}
-              <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
+              <div className="topbar-update flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
                 <span className="text-[#3A3A3A] uppercase tracking-wider">Güncelleme:</span>
                 <span className="text-[#555555]">
                   {lastUpdate
@@ -455,9 +455,9 @@ function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; ico
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-start justify-between gap-3 px-4 py-1.5 text-[12.5px] group relative cursor-pointer transition-all ${
+      className={`nav-item w-full flex items-start justify-between gap-3 px-4 py-1.5 text-[12.5px] group relative cursor-pointer transition-all ${
         active ? 'text-[#F5E7B0] bg-[#14110A]' : 'text-[#A3A3A3] hover:text-[#E5E5E5] hover:bg-[#111111]'
-      }`}
+      } ${active ? 'is-active' : ''}`}
       style={active ? { boxShadow: 'inset 0 0 0 1px rgba(251,191,36,0.10), inset 0 14px 30px rgba(251,191,36,0.05)' } : undefined}
     >
       {active && (

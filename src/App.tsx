@@ -52,7 +52,7 @@ const NEWS_SECTION_ID = 'news';
 const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID, WEEKLY_REPORTS_SECTION_ID] as const;
 
 type AppSettings = {
-  theme: 'dark' | 'graphite' | 'light';
+  theme: 'dark' | 'graphite' | 'light' | 'modern';
   reducedMotion: boolean;
   guideDefaultOpen: boolean;
   showMetricDates: boolean;
@@ -1011,7 +1011,7 @@ export default function App() {
       if (!stored) return;
       const parsed = JSON.parse(stored) as Partial<AppSettings>;
       setSettings({
-        theme: parsed.theme === 'graphite' || parsed.theme === 'light' ? parsed.theme : 'dark',
+        theme: parsed.theme === 'graphite' || parsed.theme === 'light' || parsed.theme === 'modern' ? parsed.theme : 'dark',
         reducedMotion: Boolean(parsed.reducedMotion),
         guideDefaultOpen: Boolean(parsed.guideDefaultOpen),
         showMetricDates: parsed.showMetricDates !== false,
@@ -1534,6 +1534,7 @@ export default function App() {
                     { value: 'dark' as const, label: 'Koyu', note: 'Mevcut görünüm' },
                     { value: 'graphite' as const, label: 'Grafit', note: 'Biraz daha yumuşak kontrast' },
                     { value: 'light' as const, label: 'Açık', note: 'Gündüz okuması için' },
+                    { value: 'modern' as const, label: 'Modern', note: 'Editoryal siyah, bakır vurgu ve keskin tipografi' },
                   ].map((option) => (
                     <button
                       key={option.value}

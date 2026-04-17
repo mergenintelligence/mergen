@@ -24,6 +24,7 @@ export interface DashboardData {
     trend: 'up' | 'down' | 'flat';
     fetchedCount: number;
     totalCount: number;
+    history: { date: string; score: number }[];
   }[];
   pilotMetrics: {
     id: string;
@@ -476,7 +477,8 @@ export function useDashboardData(selectedCategoryId: string) {
         .from('scores')
         .select('*')
         .eq('entity_type', 'category')
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(5000);
 
       // Get metric counts for each category
       const { data: allMetrics } = await supabase.from('metrics').select('id, category_id');
@@ -513,7 +515,13 @@ export function useDashboardData(selectedCategoryId: string) {
               : null,
           trend: getScoreTrend(currentScore, referenceScore),
           fetchedCount,
-          totalCount
+          totalCount,
+          history: categoryHistory
+            .map((entry) => ({
+              date: entry.date,
+              score: Number(entry.score),
+            }))
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
         };
       }) || [];
 

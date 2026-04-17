@@ -16,25 +16,25 @@ import { AiInsightCard } from './AiInsightCard';
 
 function scoreColor(score: number | null): string {
   if (score === null) return '#4A4A4A';
-  if (score >= 70) return '#4ADE80';
-  if (score >= 50) return '#FBBF24';
-  if (score >= 30) return '#FB923C';
+  if (score >= 75) return '#4ADE80';
+  if (score >= 55) return '#FBBF24';
+  if (score >= 35) return '#FB923C';
   return '#F87171';
 }
 
 function scoreBg(score: number | null): string {
   if (score === null) return '#111111';
-  if (score >= 70) return '#0A1A0A';
-  if (score >= 50) return '#141008';
-  if (score >= 30) return '#160C06';
+  if (score >= 75) return '#0A1A0A';
+  if (score >= 55) return '#141008';
+  if (score >= 35) return '#160C06';
   return '#180808';
 }
 
 function scoreBorder(score: number | null): string {
   if (score === null) return '#1F1F1F';
-  if (score >= 70) return '#1A3A1A';
-  if (score >= 50) return '#3A3010';
-  if (score >= 30) return '#3A1E0A';
+  if (score >= 75) return '#1A3A1A';
+  if (score >= 55) return '#3A3010';
+  if (score >= 35) return '#3A1E0A';
   return '#3A1010';
 }
 
@@ -1072,10 +1072,10 @@ function WorldMap({
         {/* Legend */}
         <div className="absolute bottom-2 right-3 flex items-center gap-3">
           {[
-            { c: '#4ADE80', l: '≥70' },
-            { c: '#FBBF24', l: '50–69' },
-            { c: '#FB923C', l: '30–49' },
-            { c: '#F87171', l: '<30' },
+            { c: '#4ADE80', l: '≥75' },
+            { c: '#FBBF24', l: '55–74' },
+            { c: '#FB923C', l: '35–54' },
+            { c: '#F87171', l: '<35' },
           ].map(item => (
             <span key={item.l} className="flex items-center gap-1 text-[10px] font-mono text-[#666666]">
               <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: item.c, opacity: 0.7 }} />
@@ -1272,7 +1272,7 @@ function CategoryHeatmap({
         accent="#8B5CF6"
         right={
           <div className="flex items-center gap-3">
-          {[{ c: '#4ADE80', l: '≥70' }, { c: '#FBBF24', l: '50–69' }, { c: '#FB923C', l: '30–49' }, { c: '#F87171', l: '<30' }].map(item => (
+          {[{ c: '#4ADE80', l: '≥75' }, { c: '#FBBF24', l: '55–74' }, { c: '#FB923C', l: '35–54' }, { c: '#F87171', l: '<35' }].map(item => (
             <span key={item.l} className="flex items-center gap-1 text-[10px] font-mono text-[#666666]">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.c }} />
               {item.l}

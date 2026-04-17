@@ -1821,7 +1821,7 @@ function CorrelationSignalPanel({
             <div className="rounded-sm border border-[#1A1A1A] bg-[#0D0D0D] p-3">
               <div className="text-[10px] uppercase tracking-[0.16em] text-[#D4A843] mb-3">En Güçlü Lead-Lag Sinyalleri</div>
               <div className="space-y-2">
-                {correlationData.signals.slice(0, 5).map((signal, index) => (
+                {correlationData.signals.slice(0, 6).map((signal, index) => (
                   <button
                     key={signal.key}
                     type="button"

@@ -935,8 +935,23 @@ export default function App() {
           : selectedCategoryId === SETTINGS_SECTION_ID
             ? 'Ayarlar bölümü görünüm, hareket ve rehber deneyimini kişiselleştirmek için ilk yapı taşlarını içerir.'
             : selectedCategoryId === COOLDOWN_SECTION_ID
-              ? 'Bu gizli ekran, sistem çalıştırma ve AI yorum yenileme işlemlerini tek yerden manuel tetiklemek için hazırlandı.'
+            ? 'Bu gizli ekran, sistem çalıştırma ve AI yorum yenileme işlemlerini tek yerden manuel tetiklemek için hazırlandı.'
       : getScoreNarrative(topPanelScore, topPanelLabel);
+  const isNewsSection = selectedCategoryId === NEWS_SECTION_ID;
+  const topInfoTone = isNewsSection
+    ? {
+        border: 'border-[#1D3442]',
+        color: '#38BDF8',
+        backgroundImage:
+          'linear-gradient(135deg, rgba(56,189,248,0.18) 0%, rgba(14,165,233,0.08) 26%, transparent 52%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
+        boxShadow: '0 0 0 1px rgba(56,189,248,0.08) inset, 0 18px 40px rgba(56,189,248,0.10)',
+      }
+    : {
+        border: getScoreTone(topPanelScore).border,
+        color: getScoreTone(topPanelScore).color,
+        backgroundImage: `linear-gradient(135deg, ${getScoreTone(topPanelScore).color}16 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
+        boxShadow: `0 0 0 1px rgba(255,255,255,0.015) inset, 0 18px 40px ${getScoreTone(topPanelScore).color}0f`,
+      };
   const totalFetchedMetrics = (data?.categories ?? []).reduce((sum, category) => sum + category.fetchedCount, 0);
   const totalTrackedMetrics = (data?.categories ?? []).reduce((sum, category) => sum + category.totalCount, 0);
   const coverageRatio = totalTrackedMetrics > 0
@@ -1286,16 +1301,19 @@ export default function App() {
           {selectedCategoryId !== 'home' && selectedCategoryId !== WEEKLY_REPORTS_SECTION_ID && (
             <div className="flex-1 min-w-0 flex">
               <div
-                className={`relative flex-1 overflow-hidden rounded-sm border ${getScoreTone(topPanelScore).border} px-5 py-4 bg-[#111111]`}
+                className={`relative flex-1 overflow-hidden rounded-sm border ${topInfoTone.border} px-5 py-4 bg-[#111111]`}
                 style={{
-                  backgroundImage: `linear-gradient(135deg, ${getScoreTone(topPanelScore).color}16 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
-                  boxShadow: `0 0 0 1px rgba(255,255,255,0.015) inset, 0 18px 40px ${getScoreTone(topPanelScore).color}0f`,
+                  backgroundImage: topInfoTone.backgroundImage,
+                  boxShadow: topInfoTone.boxShadow,
                 }}
               >
-                <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: getScoreTone(topPanelScore).color }} />
+                <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: topInfoTone.color }} />
+                {isNewsSection && (
+                  <div className="pointer-events-none absolute inset-y-0 right-0 w-28 bg-[linear-gradient(270deg,rgba(56,189,248,0.12)_0%,rgba(56,189,248,0.03)_48%,transparent_100%)]" />
+                )}
                 <div
                   className="mb-2 text-[11px] font-mono uppercase tracking-[0.15em]"
-                  style={{ color: getScoreTone(topPanelScore).color }}
+                  style={{ color: topInfoTone.color }}
                 >
                   {topInfoTitle}
                 </div>

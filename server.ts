@@ -99,6 +99,18 @@ type PredictionSnapshot = {
 
 let cryptoSnapshotCache: { fetchedAt: number; data: CryptoSnapshot } | null = null;
 let predictionSnapshotCache: { fetchedAt: number; data: PredictionSnapshot } | null = null;
+let mag7SnapshotCache: { fetchedAt: number; data: any[] } | null = null;
+
+const MAG7_SYMBOLS = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA'] as const;
+const MAG7_META: Record<string, { name: string; accent: string }> = {
+  MSFT: { name: 'Microsoft', accent: '#60A5FA' },
+  AAPL: { name: 'Apple', accent: '#A3A3A3' },
+  NVDA: { name: 'NVIDIA', accent: '#4ADE80' },
+  GOOGL: { name: 'Alphabet', accent: '#FBBF24' },
+  AMZN: { name: 'Amazon', accent: '#FB923C' },
+  META: { name: 'Meta', accent: '#A78BFA' },
+  TSLA: { name: 'Tesla', accent: '#F87171' },
+};
 
 function hashSeriesId(input: string) {
   return input.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) * (index + 1), 0);
@@ -1810,6 +1822,43 @@ async function startServer() {
     } catch (error: any) {
       console.error("Yahoo Finance Proxy Error:", error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/market/mag7", async (_req, res) => {
+    try {
+      if (mag7SnapshotCache && Date.now() - mag7SnapshotCache.fetchedAt < 5 * 60 * 1000) {
+        return res.json({ data: mag7SnapshotCache.data, cached: true });
+      }
+
+      const data = await Promise.all(
+        MAG7_SYMBOLS.map(async (symbol) => {
+          const quote = await yahooFinance.quote(symbol);
+          const chart = await yahooFinance.chart(symbol, { range: '1mo', interval: '1d' });
+          const history = (chart?.quotes || [])
+            .map((entry: any) => Number(entry?.close))
+            .filter((value: number) => Number.isFinite(value) && value > 0)
+            .slice(-20);
+
+          return {
+            symbol,
+            name: MAG7_META[symbol].name,
+            accent: MAG7_META[symbol].accent,
+            price: Number(quote?.regularMarketPrice ?? 0) || null,
+            changePct: Number(quote?.regularMarketChangePercent ?? 0) || null,
+            marketCap: Number(quote?.marketCap ?? 0) || null,
+            history,
+          };
+        }),
+      );
+
+      const sorted = data.sort((left, right) => (right.marketCap ?? 0) - (left.marketCap ?? 0));
+      mag7SnapshotCache = { fetchedAt: Date.now(), data: sorted };
+
+      res.json({ data: sorted, cached: false });
+    } catch (error: any) {
+      console.error("MAG7 snapshot error:", error);
+      res.status(500).json({ error: error?.message || "Failed to fetch MAG7 snapshot" });
     }
   });
 

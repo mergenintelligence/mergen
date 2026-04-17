@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip,
 } from 'recharts';
@@ -148,6 +148,91 @@ type WatchlistItem = {
   trend: 'up' | 'down' | 'flat';
 };
 
+type Mag7Item = {
+  symbol: string;
+  name: string;
+  accent: string;
+  price: number | null;
+  changePct: number | null;
+  weight: number;
+  history: number[];
+};
+
+type TopAssetItem = {
+  rank: number;
+  symbol: string;
+  name: string;
+  marketCap: string;
+  country: string;
+  accent: string;
+  kind: 'metal' | 'crypto' | 'equity';
+  price: number | null;
+  changePct: number | null;
+  history: number[];
+};
+
+const MAG7_ITEMS: Array<{ symbol: string; name: string; accent: string; weight: number }> = [
+  { symbol: 'MSFT', name: 'Microsoft', accent: '#60A5FA', weight: 10 },
+  { symbol: 'AAPL', name: 'Apple', accent: '#A3A3A3', weight: 9.5 },
+  { symbol: 'NVDA', name: 'NVIDIA', accent: '#4ADE80', weight: 9 },
+  { symbol: 'GOOGL', name: 'Alphabet', accent: '#FBBF24', weight: 7.5 },
+  { symbol: 'AMZN', name: 'Amazon', accent: '#FB923C', weight: 7 },
+  { symbol: 'META', name: 'Meta', accent: '#A78BFA', weight: 6 },
+  { symbol: 'TSLA', name: 'Tesla', accent: '#F87171', weight: 5 },
+];
+
+const MAG7_LOGOS: Record<string, string> = {
+  MSFT: new URL('../../mag7/mstf.png', import.meta.url).href,
+  AAPL: new URL('../../mag7/apple.png', import.meta.url).href,
+  NVDA: new URL('../../mag7/nvdia.png', import.meta.url).href,
+  GOOGL: new URL('../../mag7/google.png', import.meta.url).href,
+  AMZN: new URL('../../mag7/amazon.png', import.meta.url).href,
+  META: new URL('../../mag7/meta.png', import.meta.url).href,
+  TSLA: new URL('../../mag7/tesla.png', import.meta.url).href,
+};
+
+const TOP_ASSET_LOGOS: Record<string, string> = {
+  GOLD: new URL('../../logolar/GOLD.XM.png', import.meta.url).href,
+  NVDA: new URL('../../logolar/NVDA.png', import.meta.url).href,
+  SILVER: new URL('../../logolar/SILVER.XM.png', import.meta.url).href,
+  GOOGL: new URL('../../logolar/GOOG.png', import.meta.url).href,
+  AAPL: new URL('../../logolar/AAPL.png', import.meta.url).href,
+  MSFT: new URL('../../logolar/MSFT.png', import.meta.url).href,
+  AMZN: new URL('../../logolar/AMZN.png', import.meta.url).href,
+  AVGO: new URL('../../logolar/AVGO.png', import.meta.url).href,
+  TSM: new URL('../../logolar/TSM.png', import.meta.url).href,
+  '2222.SR': new URL('../../logolar/2222.SR.png', import.meta.url).href,
+  META: new URL('../../logolar/META.png', import.meta.url).href,
+  TSLA: new URL('../../logolar/TSLA.png', import.meta.url).href,
+  'BRK-B': new URL('../../logolar/BRK-B.png', import.meta.url).href,
+};
+
+const TOP_ASSET_DEFS: Array<{
+  rank: number;
+  symbol: string;
+  fetchSymbol: string;
+  name: string;
+  marketCap: string;
+  country: string;
+  accent: string;
+  kind: 'metal' | 'crypto' | 'equity';
+}> = [
+  { rank: 1, symbol: 'GOLD', fetchSymbol: 'GC=F', name: 'Gold', marketCap: '$33.717T', country: 'World', accent: '#FBBF24', kind: 'metal' },
+  { rank: 2, symbol: 'NVDA', fetchSymbol: 'NVDA', name: 'NVIDIA', marketCap: '$4.901T', country: 'USA', accent: '#4ADE80', kind: 'equity' },
+  { rank: 3, symbol: 'SILVER', fetchSymbol: 'SI=F', name: 'Silver', marketCap: '$4.555T', country: 'World', accent: '#D1D5DB', kind: 'metal' },
+  { rank: 4, symbol: 'GOOGL', fetchSymbol: 'GOOGL', name: 'Alphabet', marketCap: '$4.105T', country: 'USA', accent: '#FBBF24', kind: 'equity' },
+  { rank: 5, symbol: 'AAPL', fetchSymbol: 'AAPL', name: 'Apple', marketCap: '$3.971T', country: 'USA', accent: '#A3A3A3', kind: 'equity' },
+  { rank: 6, symbol: 'MSFT', fetchSymbol: 'MSFT', name: 'Microsoft', marketCap: '$3.142T', country: 'USA', accent: '#60A5FA', kind: 'equity' },
+  { rank: 7, symbol: 'AMZN', fetchSymbol: 'AMZN', name: 'Amazon', marketCap: '$2.694T', country: 'USA', accent: '#FB923C', kind: 'equity' },
+  { rank: 8, symbol: 'AVGO', fetchSymbol: 'AVGO', name: 'Broadcom', marketCap: '$1.927T', country: 'USA', accent: '#F43F5E', kind: 'equity' },
+  { rank: 9, symbol: 'TSM', fetchSymbol: 'TSM', name: 'TSMC', marketCap: '$1.921T', country: 'Taiwan', accent: '#EF4444', kind: 'equity' },
+  { rank: 10, symbol: '2222.SR', fetchSymbol: '2222.SR', name: 'Saudi Aramco', marketCap: '$1.774T', country: 'S. Arabia', accent: '#22C55E', kind: 'equity' },
+  { rank: 11, symbol: 'META', fetchSymbol: 'META', name: 'Meta', marketCap: '$1.741T', country: 'USA', accent: '#A78BFA', kind: 'equity' },
+  { rank: 12, symbol: 'BTC', fetchSymbol: 'BTC-USD', name: 'Bitcoin', marketCap: '$1.550T', country: 'World', accent: '#F59E0B', kind: 'crypto' },
+  { rank: 13, symbol: 'TSLA', fetchSymbol: 'TSLA', name: 'Tesla', marketCap: '$1.503T', country: 'USA', accent: '#F87171', kind: 'equity' },
+  { rank: 14, symbol: 'BRK-B', fetchSymbol: 'BRK-B', name: 'Berkshire Hathaway', marketCap: '$1.023T', country: 'USA', accent: '#6366F1', kind: 'equity' },
+];
+
 interface HomePageProps {
   totalScore: number | null;
   totalScoreChange7d: number | null;
@@ -224,6 +309,625 @@ function PremiumPanelHeader({
         </div>
 
         {right && <div className="premium-panel-header__right shrink-0">{right}</div>}
+      </div>
+    </div>
+  );
+}
+
+function formatMag7Price(value: number | null) {
+  if (value === null) return '—';
+  if (value >= 1000) return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (value >= 100) return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatMag7Change(value: number | null) {
+  if (value === null) return '—';
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
+function mag7Tone(changePct: number | null) {
+  if (changePct === null) {
+    return {
+      border: '#232323',
+      fill: 'linear-gradient(180deg, rgba(26,26,26,0.95) 0%, rgba(16,16,16,0.98) 100%)',
+      text: '#A3A3A3',
+      glow: 'rgba(255,255,255,0.04)',
+    };
+  }
+
+  if (changePct >= 4) {
+    return {
+      border: '#15803D',
+      fill: 'linear-gradient(180deg, rgba(17,94,39,0.92) 0%, rgba(10,49,24,0.98) 100%)',
+      text: '#DCFCE7',
+      glow: 'rgba(34,197,94,0.18)',
+    };
+  }
+
+  if (changePct > 0) {
+    return {
+      border: '#166534',
+      fill: 'linear-gradient(180deg, rgba(22,101,52,0.72) 0%, rgba(10,44,24,0.98) 100%)',
+      text: '#D1FAE5',
+      glow: 'rgba(74,222,128,0.12)',
+    };
+  }
+
+  if (changePct <= -4) {
+    return {
+      border: '#991B1B',
+      fill: 'linear-gradient(180deg, rgba(127,29,29,0.92) 0%, rgba(57,14,14,0.98) 100%)',
+      text: '#FEE2E2',
+      glow: 'rgba(248,113,113,0.18)',
+    };
+  }
+
+  return {
+    border: '#7F1D1D',
+    fill: 'linear-gradient(180deg, rgba(127,29,29,0.72) 0%, rgba(44,14,14,0.98) 100%)',
+    text: '#FECACA',
+    glow: 'rgba(248,113,113,0.12)',
+  };
+}
+
+function SparklineMini({ values, color }: { values: number[]; color: string }) {
+  if (!values || values.length < 2) return null;
+
+  const width = 160;
+  const height = 42;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * width;
+      const y = height - ((value - min) / range) * (height - 4) - 2;
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-10 w-full" preserveAspectRatio="none">
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        points={points}
+      />
+    </svg>
+  );
+}
+
+function Mag7Logo({ symbol }: { symbol: string }) {
+  const logoSrc = MAG7_LOGOS[symbol];
+
+  return (
+    <img
+      src={logoSrc}
+      alt={symbol}
+      className="h-[68%] w-[68%] object-contain"
+      loading="lazy"
+      decoding="async"
+    />
+  );
+}
+
+function TopAssetLogo({ symbol, kind, accent }: { symbol: string; kind: TopAssetItem['kind']; accent: string }) {
+  const logoSrc = TOP_ASSET_LOGOS[symbol];
+
+  if (logoSrc) {
+    return <img src={logoSrc} alt={symbol} className="h-[68%] w-[68%] object-contain" loading="lazy" decoding="async" />;
+  }
+
+  if (symbol === 'GOLD') {
+    return <span className="text-[18px] leading-none">▰</span>;
+  }
+  if (symbol === 'SILVER') {
+    return <span className="text-[18px] leading-none text-[#9CA3AF]">▰</span>;
+  }
+  if (symbol === 'BTC') {
+    return <span className="text-[18px] font-bold leading-none">₿</span>;
+  }
+
+  return (
+    <span className="text-[14px] font-bold leading-none" style={{ color: kind === 'equity' ? '#111111' : accent }}>
+      {symbol.slice(0, 1)}
+    </span>
+  );
+}
+
+function countryMeta(country: string) {
+  if (country === 'World') return { icon: 'globe', label: 'World' };
+  if (country === 'USA') return { icon: 'flag', flag: '🇺🇸', label: 'USA' };
+  if (country === 'Taiwan') return { icon: 'flag', flag: '🇹🇼', label: 'Taiwan' };
+  if (country === 'S. Arabia') return { icon: 'flag', flag: '🇸🇦', label: 'S. Arabia' };
+  return { icon: 'text', label: country };
+}
+
+function formatTopAssetPrice(symbol: string, value: number | null) {
+  if (value === null) return '—';
+  if (symbol === 'BTC') return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (value >= 1000) return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (value >= 100) return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function TopAssetsMarketPanel() {
+  const [items, setItems] = useState<TopAssetItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTopAssets() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 35);
+        const period1 = startDate.toISOString().split('T')[0];
+
+        const data = await Promise.all(
+          TOP_ASSET_DEFS.map(async (asset) => {
+            const response = await fetch(`/api/yahoo/historical?symbol=${encodeURIComponent(asset.fetchSymbol)}&period1=${period1}`);
+            const payload = await response.json();
+
+            if (!response.ok) {
+              throw new Error(payload?.error || `${asset.symbol} verisi alınamadı.`);
+            }
+
+            const closes = Array.isArray(payload?.observations)
+              ? payload.observations
+                  .map((entry: { close?: number }) => Number(entry?.close))
+                  .filter((value: number) => Number.isFinite(value) && value > 0)
+              : [];
+
+            const latest = closes.at(-1) ?? null;
+            const previous = closes.at(-2) ?? null;
+            const changePct = latest !== null && previous !== null && previous !== 0
+              ? ((latest - previous) / previous) * 100
+              : null;
+
+            return {
+              rank: asset.rank,
+              symbol: asset.symbol,
+              name: asset.name,
+              marketCap: asset.marketCap,
+              country: asset.country,
+              accent: asset.accent,
+              kind: asset.kind,
+              price: latest,
+              changePct,
+              history: closes.slice(-20),
+            } satisfies TopAssetItem;
+          }),
+        );
+
+        if (!cancelled) setItems(data);
+      } catch (fetchError: any) {
+        if (!cancelled) {
+          setError(fetchError?.message || 'Top assets verisi alınamadı.');
+          setItems([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadTopAssets();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const leftColumn = items.slice(0, 7);
+  const rightColumn = items.slice(7, 14);
+
+  return (
+    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+      <PremiumPanelHeader
+        icon={<Globe className="w-4 h-4" />}
+        title="Küresel Varlık Liderleri"
+        accent="#60A5FA"
+        subtitle="Piyasa değeriyle öne çıkan küresel varlıkları iki sütunda, günlük yön ve ülke dağılımıyla hızlı okumak için."
+        right={<span className="text-[11px] text-[#666666] font-mono">14 varlık</span>}
+      />
+
+      <div className="border-b border-[#1A1A1A] bg-[#0D0D0D] px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-[0.16em] text-[#8B949E]">
+          <span className="rounded-sm border border-[#2A2A2A] bg-[#111111] px-2 py-1">Companies</span>
+          <span className="rounded-sm border border-[#4A3B11] bg-[#1A1406] px-2 py-1 text-[#FCD34D]">Precious Metals</span>
+          <span className="rounded-sm border border-[#4C1D95] bg-[#1A1033] px-2 py-1 text-[#C4B5FD]">Crypto</span>
+          <span className="ml-auto text-[#555555]">7 + 7 düzen</span>
+        </div>
+      </div>
+
+      <div className="p-3">
+        {loading ? (
+          <div className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-4 py-8 text-center text-[12px] text-[#777777]">
+            Küresel varlık listesi yükleniyor...
+          </div>
+        ) : error ? (
+          <div className="rounded-sm border border-[#3A1010] bg-[#130909] px-4 py-8 text-center text-[12px] text-[#F87171]">
+            {error}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {[leftColumn, rightColumn].map((column, columnIndex) => (
+              <div key={`column-${columnIndex}`} className="overflow-hidden rounded-sm border border-[#1A1A1A] bg-[#0D0D0D]">
+                <div className="grid grid-cols-[24px_minmax(0,2.15fr)_88px_86px_72px_30px] items-center gap-2 border-b border-[#1A1A1A] bg-[#101114] px-4 py-2">
+                  <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#666666]">#</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#666666]">Name</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#666666]">Mkt Cap</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#666666]">Price</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#666666]">Today</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#666666] text-center">Geo</div>
+                </div>
+                {column.map((item, index) => {
+                  const positive = (item.changePct ?? 0) >= 0;
+                  const isSpecial = item.kind !== 'equity';
+                  const rowAccent = item.kind === 'metal' ? '#FBBF24' : item.kind === 'crypto' ? '#D946EF' : item.accent;
+                  const country = countryMeta(item.country);
+                  return (
+                    <div
+                      key={item.symbol}
+                      className="relative grid grid-cols-[24px_minmax(0,2.15fr)_88px_86px_72px_30px] items-center gap-2 px-4 py-3"
+                      style={{
+                        borderTop: index === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                        background: isSpecial
+                          ? `linear-gradient(90deg, ${rowAccent}18 0%, rgba(17,17,17,0.96) 48%, rgba(13,13,13,1) 100%)`
+                          : 'linear-gradient(90deg, rgba(255,255,255,0.015) 0%, rgba(13,13,13,1) 100%)',
+                      }}
+                    >
+                      <div className="text-[14px] font-mono text-[#D4D4D4]">{item.rank}</div>
+
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
+                          style={{
+                            borderColor: `${rowAccent}45`,
+                            backgroundColor: 'rgba(255,255,255,0.96)',
+                            color: rowAccent,
+                            boxShadow: `0 8px 18px -14px ${rowAccent}`,
+                          }}
+                        >
+                          <TopAssetLogo symbol={item.symbol} kind={item.kind} accent={rowAccent} />
+                        </div>
+                        <div className="min-w-0 border-l border-[#1A1A1A] pl-2">
+                          <div
+                            className="pr-1 text-[14px] font-semibold leading-[1.1] tracking-tight text-[#F3F4F6]"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {item.name}
+                          </div>
+                          <div className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.14em] text-[#7D8590]">{item.symbol}</div>
+                        </div>
+                      </div>
+
+                      <div className="border-l border-[#1A1A1A] pl-3 text-[11px] font-mono text-[#E5E7EB]">{item.marketCap}</div>
+
+                      <div className="border-l border-[#1A1A1A] pl-3 text-[11px] font-mono text-[#D1D5DB]">{formatTopAssetPrice(item.symbol, item.price)}</div>
+
+                      <div
+                        className="border-l border-[#1A1A1A] pl-3 text-[11px] font-mono font-semibold"
+                        style={{ color: item.changePct === null ? '#777777' : positive ? '#34D399' : '#F87171' }}
+                      >
+                        {item.changePct === null ? '—' : `${item.changePct > 0 ? '+' : ''}${item.changePct.toFixed(2)}%`}
+                      </div>
+
+                      <div className="flex items-center justify-center border-l border-[#1A1A1A] pl-2">
+                        {country.icon === 'globe' && <Globe className="h-4.5 w-4.5 text-[#60A5FA]" />}
+                        {country.icon === 'flag' && <span className="text-[16px] leading-none">{country.flag}</span>}
+                        {country.icon === 'text' && <span className="text-[13px] font-mono text-[#9CA3AF]">{country.label}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function isCompactMag7Tile(symbol: string) {
+  return ['AAPL', 'NVDA', 'AMZN', 'META'].includes(symbol);
+}
+
+function isWideMag7Tile(symbol: string) {
+  return ['GOOGL', 'TSLA'].includes(symbol);
+}
+
+function isLargeMag7Tile(symbol: string) {
+  return symbol === 'MSFT';
+}
+
+function getMag7TileClass(symbol: string) {
+  switch (symbol) {
+    case 'MSFT':
+      return 'xl:col-span-2 xl:row-span-2';
+    case 'AAPL':
+      return 'xl:col-span-1 xl:row-span-1';
+    case 'NVDA':
+      return 'xl:col-span-1 xl:row-span-1';
+    case 'GOOGL':
+      return 'xl:col-span-2 xl:row-span-1';
+    case 'AMZN':
+      return 'xl:col-span-1 xl:row-span-1';
+    case 'META':
+      return 'xl:col-span-1 xl:row-span-1';
+    case 'TSLA':
+      return 'xl:col-span-2 xl:row-span-1';
+    default:
+      return '';
+  }
+}
+
+function Mag7LeadershipHeatmap() {
+  const [items, setItems] = useState<Mag7Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMag7() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 35);
+        const period1 = startDate.toISOString().split('T')[0];
+
+        const data = await Promise.all(
+          MAG7_ITEMS.map(async (item) => {
+            const response = await fetch(`/api/yahoo/historical?symbol=${encodeURIComponent(item.symbol)}&period1=${period1}`);
+            const payload = await response.json();
+
+            if (!response.ok) {
+              throw new Error(payload?.error || `${item.symbol} verisi alınamadı.`);
+            }
+
+            const closes = Array.isArray(payload?.observations)
+              ? payload.observations
+                  .map((entry: { close?: number }) => Number(entry?.close))
+                  .filter((value: number) => Number.isFinite(value) && value > 0)
+              : [];
+
+            const latest = closes.at(-1) ?? null;
+            const previous = closes.at(-2) ?? null;
+            const changePct = latest !== null && previous !== null && previous !== 0
+              ? ((latest - previous) / previous) * 100
+              : null;
+
+            return {
+              symbol: item.symbol,
+              name: item.name,
+              accent: item.accent,
+              weight: item.weight,
+              price: latest,
+              changePct,
+              history: closes.slice(-20),
+            } satisfies Mag7Item;
+          }),
+        );
+
+        const sorted = [...data].sort((left, right) => right.weight - left.weight);
+
+        if (!cancelled) {
+          setItems(sorted);
+        }
+      } catch (fetchError: any) {
+        if (!cancelled) {
+          setError(fetchError?.message || 'MAG7 verisi alınamadı.');
+          setItems([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadMag7();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const leader = items[0] ?? null;
+  const strongest = items.filter((item) => item.changePct !== null).sort((a, b) => (b.changePct ?? -999) - (a.changePct ?? -999))[0] ?? null;
+  const weakest = items.filter((item) => item.changePct !== null).sort((a, b) => (a.changePct ?? 999) - (b.changePct ?? 999))[0] ?? null;
+  const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+
+  return (
+    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+      <PremiumPanelHeader
+        icon={<Zap className="w-4 h-4" />}
+        title="MAG7 Liderlik Haritası"
+        accent="#22C55E"
+        subtitle="Mega-cap teknoloji liderlerinde günlük güç dağılımını, liderliği ve gün içi yönü tek bakışta izlemek için."
+        right={<span className="text-[11px] text-[#666666] font-mono">7 hisse</span>}
+      />
+
+      <div className="border-b border-[#1A1A1A] bg-[#0D0D0D] p-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {[
+            {
+              label: 'Bugünün Lideri',
+              symbol: leader?.symbol ?? '--',
+              value: leader ? 'Ağırlıkta en büyük temsil' : 'Veri bekleniyor',
+              accent: '#FBBF24',
+            },
+            {
+              label: 'En Güçlü İvme',
+              symbol: strongest?.symbol ?? '--',
+              value: strongest ? formatMag7Change(strongest.changePct) : 'Veri bekleniyor',
+              accent: '#4ADE80',
+            },
+            {
+              label: 'En Zayıf Halka',
+              symbol: weakest?.symbol ?? '--',
+              value: weakest ? formatMag7Change(weakest.changePct) : 'Veri bekleniyor',
+              accent: '#F87171',
+            },
+          ].map((card) => (
+            <div
+              key={card.label}
+              className="relative overflow-hidden rounded-sm border px-4 py-3"
+              style={{
+                borderColor: `${card.accent}55`,
+                background: `linear-gradient(135deg, ${card.accent}16 0%, rgba(17,17,17,0.96) 52%, rgba(10,10,10,0.98) 100%)`,
+                boxShadow: `inset 0 0 0 1px ${card.accent}12`,
+              }}
+            >
+              <div className="absolute inset-x-0 top-0 h-[1px]" style={{ background: `linear-gradient(90deg, ${card.accent}00 0%, ${card.accent}CC 30%, ${card.accent}22 100%)` }} />
+              <div className="text-[10px] font-mono uppercase tracking-[0.18em]" style={{ color: card.accent }}>
+                {card.label}
+              </div>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <div className="text-[22px] font-semibold tracking-tight text-[#F3F4F6]">{card.symbol}</div>
+                <div className="text-[11px] font-mono text-[#8B949E]">MAG7</div>
+              </div>
+              <div className="mt-1 text-[12px] text-[#9CA3AF]">{card.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-3">
+        {loading ? (
+          <div className="rounded-sm border border-[#1F1F1F] bg-[#0D0D0D] px-4 py-8 text-center text-[12px] text-[#777777]">
+            MAG7 verisi yükleniyor...
+          </div>
+        ) : error ? (
+          <div className="rounded-sm border border-[#3A1010] bg-[#130909] px-4 py-8 text-center text-[12px] text-[#F87171]">
+            {error}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4 xl:auto-rows-[132px]">
+            {items.map((item) => {
+              const tone = mag7Tone(item.changePct);
+              const large = isLargeMag7Tile(item.symbol);
+              const showSparkline = item.symbol === leader?.symbol;
+              const standardTile = !large;
+              const roleLabel = item.symbol === leader?.symbol
+                ? 'Lider'
+                : item.symbol === strongest?.symbol
+                  ? 'İvme'
+                  : item.symbol === weakest?.symbol
+                    ? 'Zayıf'
+                    : 'Çekirdek';
+              const roleAccent = item.symbol === leader?.symbol
+                ? '#FBBF24'
+                : item.symbol === strongest?.symbol
+                  ? '#4ADE80'
+                  : item.symbol === weakest?.symbol
+                    ? '#F87171'
+                    : '#94A3B8';
+              const weightShare = totalWeight > 0 ? `${Math.round((item.weight / totalWeight) * 100)}% pay` : '—';
+              return (
+                <div
+                  key={item.symbol}
+                  className={`group relative overflow-hidden rounded-sm border transition-transform duration-150 hover:-translate-y-[1px] ${getMag7TileClass(item.symbol)} ${standardTile ? 'p-3' : 'p-4'}`}
+                  style={{
+                    borderColor: tone.border,
+                    background: `${tone.fill}, radial-gradient(circle at top left, ${item.accent}14 0%, transparent 42%)`,
+                    boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.02), inset 0 1px 0 rgba(255,255,255,0.04), 0 16px 30px -18px ${tone.glow}`,
+                  }}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[1px]" style={{ background: `linear-gradient(90deg, ${item.accent}00 0%, ${item.accent}CC 18%, ${item.accent}22 100%)` }} />
+                  <div className="absolute -left-10 top-0 h-20 w-20 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${item.accent}16` }} />
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-start justify-between gap-3">
+                      <div
+                        className={`${standardTile ? 'h-9 w-9' : 'h-11 w-11'} flex items-center justify-center rounded-full border shrink-0`}
+                        style={{
+                          borderColor: `${item.accent}55`,
+                          backgroundColor: 'rgba(255,255,255,0.96)',
+                          color: item.accent,
+                          boxShadow: `0 10px 18px -14px ${item.accent}`,
+                        }}
+                      >
+                        <Mag7Logo symbol={item.symbol} />
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="rounded-sm px-2 py-1 text-[11px] font-mono" style={{ color: tone.text, backgroundColor: `${item.accent}20` }}>
+                          {formatMag7Change(item.changePct)}
+                        </div>
+                        {large && (
+                          <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#A7B0BA]">
+                            <span style={{ color: roleAccent }}>{roleLabel}</span>
+                            <span className="mx-1.5 text-[#4B5563]">•</span>
+                            <span>{weightShare}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className={`${standardTile ? 'mt-4' : 'mt-4'} min-w-0`}>
+                      <div className={`${standardTile ? 'text-[18px] xl:text-[20px]' : 'text-[28px] xl:text-[34px]'} font-semibold tracking-tight leading-[0.95] text-[#F8FAFC]`}>
+                        {item.symbol}
+                      </div>
+                      <div className={`mt-1 ${standardTile ? 'text-[11px]' : 'text-[12px]'} leading-none text-[#D1D5DB] truncate`}>
+                        {item.name}
+                      </div>
+                    </div>
+
+                    <div className={`${standardTile ? 'mt-2 text-[14px]' : 'mt-3 text-[22px]'} font-mono font-semibold leading-none text-[#F9FAFB]`}>
+                      {formatMag7Price(item.price)}
+                    </div>
+
+                    {standardTile && (
+                      <div className="mt-auto flex items-center justify-between pt-3">
+                        <span
+                          className="inline-flex items-center rounded-sm border px-2 py-1 text-[10px] font-mono uppercase tracking-[0.16em]"
+                          style={{ color: roleAccent, borderColor: `${roleAccent}36`, backgroundColor: `${roleAccent}10` }}
+                        >
+                          {roleLabel}
+                        </span>
+                        <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#8B949E]">
+                          {weightShare}
+                        </span>
+                      </div>
+                    )}
+
+                    {showSparkline && (
+                      <div className="mt-auto pt-3">
+                        <div className="rounded-sm border border-[#1E3A2D] bg-[#0B1510]/80 px-3 py-2">
+                          <div className="mb-1.5 flex items-center justify-between">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#86EFAC]">Liderlik Trendi</span>
+                            <span className="text-[10px] font-mono text-[#6B7280]">20 gün</span>
+                          </div>
+                          <SparklineMini values={item.history} color={item.changePct !== null && item.changePct >= 0 ? '#4ADE80' : '#F87171'} />
+                        </div>
+                      </div>
+                    )}
+
+                    {!showSparkline && (
+                      <div className={`${large ? 'pt-6' : 'pt-3'} mt-auto`} />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2262,6 +2966,8 @@ export function HomePage({
         </div>
       </div>
 
+      <Mag7LeadershipHeatmap />
+
       {/* ─── Kategori Isı Haritası ───────────────────────── */}
       <CategoryHeatmap
         categories={categories}
@@ -2270,6 +2976,8 @@ export function HomePage({
       />
 
       <CorrelationSignalPanel categories={categories} onSelectCategory={onSelectCategory} />
+
+      <TopAssetsMarketPanel />
 
       {/* ─── Küresel Piyasa Haritası ─────────────────────── */}
       <WorldMap categories={categories} onSelectCategory={onSelectCategory} />

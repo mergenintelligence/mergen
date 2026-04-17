@@ -28,6 +28,9 @@ type Category = { id: string; name: string };
 
 type AdminSection = 'overview' | 'reports' | 'operations' | 'users' | 'system';
 
+const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
+const PREDICTION_CATEGORY_ID = '30000000-0000-0000-0000-000000000012';
+
 // ─── Helpers ──────────────────────────────────────────────────
 
 function formatDate(iso: string | null) {
@@ -515,12 +518,23 @@ function OperationsSection() {
   };
 
   useEffect(() => {
-    supabase.from('categories').select('id, name').order('name').then(({ data }) => {
+    supabase.from('categories').select('id, name').order('created_at', { ascending: true }).then(({ data }) => {
       if (data) setCategories(data);
     });
   }, []);
 
-  const entries = [{ id: 'home', name: 'HOME (Tüm Sistem)' }, ...categories];
+  const cryptoCategory = categories.find(category => category.id === CRYPTO_CATEGORY_ID);
+  const predictionCategory = categories.find(category => category.id === PREDICTION_CATEGORY_ID);
+  const remainingCategories = categories.filter(
+    category => category.id !== CRYPTO_CATEGORY_ID && category.id !== PREDICTION_CATEGORY_ID,
+  );
+
+  const entries = [
+    { id: 'home', name: 'HOME (Tüm Sistem)' },
+    ...(cryptoCategory ? [cryptoCategory] : []),
+    ...(predictionCategory ? [predictionCategory] : []),
+    ...remainingCategories,
+  ];
 
   const handleSync = async (targetId: string) => {
     setIsSyncing(true);

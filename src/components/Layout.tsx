@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Home, Activity, AlertTriangle, Settings, BarChart2, Globe, TrendingDown, Users, Cpu, Landmark, DollarSign, Hexagon, Wheat, Zap, ArrowLeftRight, Building2, TrendingUp, Bitcoin, Search, BookOpen, Send, Earth } from 'lucide-react';
+import { Home, Activity, AlertTriangle, Settings, BarChart2, Globe, TrendingDown, Users, Cpu, Landmark, DollarSign, Hexagon, Wheat, Zap, ArrowLeftRight, Building2, TrendingUp, Bitcoin, Search, BookOpen, Send, Earth, Gem, BriefcaseBusiness } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -29,6 +29,8 @@ const getCategoryIcon = (name: string) => {
   if (lowerName.includes('reel') || lowerName.includes('büyüme')) return <TrendingDown />;
   if (lowerName.includes('enflasyon')) return <BarChart2 />;
   if (lowerName.includes('küresel') || lowerName.includes('jeopolitik')) return <Globe />;
+  if (lowerName.includes('etf') || lowerName.includes('sermaye')) return <BriefcaseBusiness />;
+  if (lowerName.includes('değerli') || lowerName.includes('metal')) return <Gem />;
   if (lowerName.includes('sosyal')) return <Users />;
   if (lowerName.includes('teknoloji')) return <Cpu />;
   if (lowerName.includes('fed')) return <Landmark />;
@@ -45,6 +47,45 @@ const getCategoryIcon = (name: string) => {
   if (lowerName.includes('işgücü') || lowerName.includes('ücret')) return <Users />;
   if (lowerName.includes('ticaret') || lowerName.includes('tedarik')) return <Globe />;
   return <Hexagon />;
+};
+
+const normalizeCategoryLabel = (label: string) =>
+  label
+    .toLocaleLowerCase('tr-TR')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const getCategoryIconTone = (label: string, active = false) => {
+  const lowerLabel = normalizeCategoryLabel(label);
+
+  if (active) return '#FBBF24';
+  if (lowerLabel.includes('home')) return '#60A5FA';
+  if (lowerLabel.includes('haber')) return '#38BDF8';
+  if (lowerLabel.includes('likidite') || lowerLabel.includes('para')) return '#22D3EE';
+  if (lowerLabel.includes('reel') || lowerLabel.includes('büyüme')) return '#4ADE80';
+  if (lowerLabel.includes('enflasyon')) return '#FB923C';
+  if (lowerLabel.includes('kredi') || lowerLabel.includes('finansal stres') || lowerLabel.includes('stres')) return '#F87171';
+  if (lowerLabel.includes('küresel risk')) return '#34D399';
+  if (lowerLabel.includes('kripto')) return '#F59E0B';
+  if (lowerLabel.includes('polymarket') || lowerLabel.includes('kalshi') || lowerLabel.includes('tahmin')) return '#A78BFA';
+  if (lowerLabel.includes('etf') || lowerLabel.includes('sermaye')) return '#34D399';
+  if (lowerLabel.includes('degerli') || lowerLabel.includes('metal')) return '#FBBF24';
+  if (lowerLabel.includes('enerji')) return '#FB7185';
+  if (lowerLabel.includes('doviz') || lowerLabel.includes('kur')) return '#22D3EE';
+  if (lowerLabel.includes('teknoloji')) return '#818CF8';
+  if (lowerLabel.includes('kuresel') || lowerLabel.includes('ticaret')) return '#4ADE80';
+  if (lowerLabel.includes('sosyal') || lowerLabel.includes('isgucu') || lowerLabel.includes('ucret')) return '#F87171';
+  if (lowerLabel.includes('fed') || lowerLabel.includes('kamu') || lowerLabel.includes('borc')) return '#C4B5FD';
+  if (lowerLabel.includes('tarim') || lowerLabel.includes('gida')) return '#A3E635';
+  if (lowerLabel.includes('volatilite') || lowerLabel.includes('stres')) return '#FB7185';
+  if (lowerLabel.includes('konut') || lowerLabel.includes('gayrimenkul')) return '#FCA5A5';
+  if (lowerLabel.includes('genisligi') || lowerLabel.includes('pozisyon')) return '#2DD4BF';
+  if (lowerLabel.includes('gelismekte')) return '#60A5FA';
+  if (lowerLabel.includes('haftalık rapor')) return '#93C5FD';
+  if (lowerLabel.includes('uyarı')) return '#F87171';
+  if (lowerLabel.includes('sapma')) return '#F59E0B';
+  if (lowerLabel.includes('ayar')) return '#A3A3A3';
+  return '#8A8A8A';
 };
 
 const PLACEHOLDERS: Record<string, string> = {
@@ -452,6 +493,8 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
 }
 
 function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; icon: React.ReactNode; label: string; active?: boolean; badge?: string; onClick?: () => void }) {
+  const iconColor = getCategoryIconTone(label, active);
+
   return (
     <button
       onClick={onClick}
@@ -469,7 +512,7 @@ function NavItem({ icon, label, active, badge, onClick }: { key?: React.Key; ico
       <div className="flex min-w-0 flex-1 items-start gap-2.5">
         <div
           className="mt-0.5 h-3.5 w-3.5 shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:stroke-[1.5]"
-          style={active ? { color: '#FBBF24' } : undefined}
+          style={{ color: iconColor }}
         >
           {icon}
         </div>

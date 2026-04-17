@@ -522,7 +522,7 @@ export function PredictionMarketsPage({
             <div className="text-[13px] text-[#D4D4D4] leading-relaxed">{aiInsight}</div>
             {aiSimpleSummary && (
               <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
-                <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">Sade Özet</div>
+                <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">Sadeleştirilmiş kısa özet:</div>
                 <div className="text-[13px] text-[#AAAAAA] leading-relaxed">{aiSimpleSummary}</div>
               </div>
             )}

@@ -1704,7 +1704,7 @@ export default function App() {
                       {data.aiSimpleSummary && (
                         <div className="mt-4 pt-4 border-t border-[#1A2E1A]">
                           <div className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#4ADE80] mb-2">
-                            Sade Özet
+                            Sadeleştirilmiş kısa özet:
                           </div>
                           <div className="text-[13px] text-[#AAAAAA] leading-relaxed">
                             {data.aiSimpleSummary}

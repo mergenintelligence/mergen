@@ -1268,7 +1268,7 @@ function CategoryHeatmap({
       <PremiumPanelHeader
         icon={<Activity className="w-4 h-4" />}
         title="Kategori Isı Haritası"
-        accent="#F59E0B"
+        accent="#8B5CF6"
         right={
           <div className="flex items-center gap-3">
           {[{ c: '#4ADE80', l: '≥70' }, { c: '#FBBF24', l: '50–69' }, { c: '#FB923C', l: '30–49' }, { c: '#F87171', l: '<30' }].map(item => (

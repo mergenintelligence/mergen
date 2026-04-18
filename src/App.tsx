@@ -53,7 +53,7 @@ const NEWS_SECTION_ID = 'news';
 const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID, WEEKLY_REPORTS_SECTION_ID] as const;
 
 type AppSettings = {
-  theme: 'dark' | 'graphite' | 'light' | 'modern';
+  theme: 'light' | 'slate';
   reducedMotion: boolean;
   guideDefaultOpen: boolean;
   showMetricDates: boolean;
@@ -72,7 +72,7 @@ type FavoriteMetric = {
 };
 
 const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'dark',
+  theme: 'slate',
   reducedMotion: false,
   guideDefaultOpen: false,
   showMetricDates: true,
@@ -1026,8 +1026,9 @@ export default function App() {
       const stored = window.localStorage.getItem(APP_SETTINGS_KEY);
       if (!stored) return;
       const parsed = JSON.parse(stored) as Partial<AppSettings>;
+      const rawTheme = (parsed as Partial<AppSettings> & { theme?: string }).theme;
       setSettings({
-        theme: parsed.theme === 'graphite' || parsed.theme === 'light' || parsed.theme === 'modern' ? parsed.theme : 'dark',
+        theme: rawTheme === 'light' ? 'light' : 'slate',
         reducedMotion: Boolean(parsed.reducedMotion),
         guideDefaultOpen: Boolean(parsed.guideDefaultOpen),
         showMetricDates: parsed.showMetricDates !== false,
@@ -1550,10 +1551,8 @@ export default function App() {
                 <div className="text-xs text-[#666666] mb-4">Panelin renk yapısı ve genel yüzeyi.</div>
                 <div className="space-y-2">
                   {[
-                    { value: 'dark' as const, label: 'Koyu', note: 'Mevcut görünüm' },
-                    { value: 'graphite' as const, label: 'Grafit', note: 'Biraz daha yumuşak kontrast' },
                     { value: 'light' as const, label: 'Açık', note: 'Gündüz okuması için' },
-                    { value: 'modern' as const, label: 'Modern', note: 'Editoryal siyah, bakır vurgu ve keskin tipografi' },
+                    { value: 'slate' as const, label: 'Slate', note: 'Ana tema. Koyu terminal yüzeyi, mono etiketler ve rafine veri kontrastı' },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -2105,35 +2104,40 @@ function ScoreCircle({ score, name, trend, onClick }: { key?: React.Key; score: 
   return (
     <div
       onClick={onClick}
-      className="relative bg-[#111111] border border-[#1F1F1F] rounded-sm p-4 cursor-pointer hover:bg-[#141414] transition-colors group overflow-hidden"
+      className="group relative cursor-pointer overflow-hidden rounded-sm border border-[#2A2E33] bg-[#1A1E22] p-4 transition-colors hover:bg-[#1D2227]"
     >
-      <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-sm" style={{ backgroundColor: color }} />
-      {/* Category name */}
-      <div className="mb-4 min-h-[2.4rem]">
-        <div className="inline-flex max-w-full rounded-sm border border-[#1F1F1F] bg-[#0A0A0A] px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-          <div className="text-[12px] font-medium text-[#F5F5F5] leading-snug tracking-[0.01em]">
+      <div className="absolute left-0 top-3 bottom-3 w-[2px]" style={{ backgroundColor: color }} />
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-h-[2.4rem]">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-[#8E959D] font-mono mb-2">
             {name}
           </div>
         </div>
+        <div
+          className="rounded-[2px] border px-2 py-1 text-[10px] uppercase tracking-[0.14em] font-mono"
+          style={{ color, borderColor: `${color}40`, backgroundColor: `${color}12` }}
+        >
+          {scoreWord}
+        </div>
       </div>
-      {/* Score number */}
-      <div className="flex items-baseline gap-1 mb-1">
-        <span className="text-[2.2rem] leading-none font-mono font-bold tabular-nums" style={{ color }}>
+      <div className="flex items-baseline gap-1 mb-2">
+        <span className="text-[2.2rem] leading-none font-mono font-semibold tabular-nums text-[#F5F7FA]">
           {score !== null ? score : '--'}
         </span>
-        {score !== null && <span className="text-[11px] text-[#3A3A3A] font-mono">/100</span>}
+        {score !== null && <span className="text-[11px] text-[#66707A] font-mono">/100</span>}
       </div>
-      {/* Progress bar */}
-      <div className="h-[3px] bg-[#1A1A1A] rounded-full mt-2 mb-3">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: score !== null ? `${score}%` : '0%', backgroundColor: color, opacity: 0.75 }}
-        />
+      <div className="mb-3">
+        <div className="relative h-[5px] overflow-hidden rounded-full bg-[#2A2F35]">
+          <div className="absolute inset-y-0 left-0 w-[25%] bg-[#D96B63]" />
+          <div className="absolute inset-y-0 left-[25%] w-[25%] bg-[#B58B4E]" />
+          <div className="absolute inset-y-0 left-[50%] w-[25%] bg-[#7A8A58]" />
+          <div className="absolute inset-y-0 left-[75%] w-[25%] bg-[#5A9A6D]" />
+          <div className="absolute top-1/2 z-10 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[#E8ECEF]" style={{ left: `${score ?? 0}%` }} />
+        </div>
       </div>
-      {/* Footer: score word + trend */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>
-          {scoreWord}
+        <span className="text-[10px] uppercase tracking-[0.14em] font-mono text-[#66707A]">
+          Rejim
         </span>
         <span
           className="text-[11px] font-mono"
@@ -2165,28 +2169,24 @@ function TopScoreHero({
 
   return (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-sm border ${tone.border} px-5 py-4 min-w-[250px] bg-[#111111]`}
-      style={{
-        backgroundImage: `linear-gradient(135deg, ${tone.color}18 0%, transparent 36%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
-        boxShadow: `0 0 0 1px rgba(255,255,255,0.015) inset, 0 18px 40px ${tone.color}0f`,
-      }}
+      className="relative shrink-0 overflow-hidden rounded-sm border border-[#2A2E33] px-5 py-4 min-w-[250px] bg-[#1A1E22]"
     >
-      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: tone.color }} />
+      <div className="absolute left-0 top-4 bottom-4 w-[2px]" style={{ backgroundColor: tone.color }} />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[10px] text-[#A3A3A3] uppercase tracking-[0.16em] mb-2">{label}</div>
+          <div className="text-[10px] text-[#8E959D] uppercase tracking-[0.16em] mb-2 font-mono">{label}</div>
           <div className="flex items-end gap-2">
-            <div className="text-[3.25rem] font-mono tabular-nums leading-none text-[#F5F5F5]">
+            <div className="text-[3.25rem] font-mono tabular-nums leading-none text-[#F5F7FA]">
               {score !== null ? score : '--'}
             </div>
-            <div className="text-sm text-[#666666] font-mono mb-1.5">/100</div>
+            <div className="text-sm text-[#66707A] font-mono mb-1.5">/100</div>
           </div>
         </div>
         <div
-          className="rounded-sm border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-semibold"
+          className="rounded-[2px] border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] font-mono"
           style={{
             color: tone.color,
-            borderColor: `${tone.color}44`,
+            borderColor: `${tone.color}40`,
             backgroundColor: `${tone.color}12`,
           }}
         >
@@ -2194,15 +2194,16 @@ function TopScoreHero({
         </div>
       </div>
 
-      <div className="mt-4 space-y-2">
-        <div className="h-1.5 overflow-hidden rounded-full bg-[#1A1A1A]">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{ width: score !== null ? `${score}%` : '0%', background: `linear-gradient(90deg, ${tone.color}CC 0%, ${tone.color} 100%)` }}
-          />
+      <div className="mt-5 space-y-2">
+        <div className="relative h-[5px] overflow-hidden rounded-full bg-[#2A2F35]">
+          <div className="absolute inset-y-0 left-0 w-[25%] bg-[#D96B63]" />
+          <div className="absolute inset-y-0 left-[25%] w-[25%] bg-[#B58B4E]" />
+          <div className="absolute inset-y-0 left-[50%] w-[25%] bg-[#7A8A58]" />
+          <div className="absolute inset-y-0 left-[75%] w-[25%] bg-[#5A9A6D]" />
+          <div className="absolute top-1/2 z-10 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[#E8ECEF]" style={{ left: `${score ?? 0}%` }} />
         </div>
-        <div className="flex items-center justify-between rounded-sm border border-[#1F1F1F] bg-[#0D0D0D]/90 px-3 py-2">
-          <span className="text-[10px] uppercase tracking-[0.14em] text-[#666666]">7G değişim</span>
+        <div className="mt-3 flex items-center justify-between rounded-sm border border-[#2A2E33] bg-[#161A1E] px-3 py-2">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-[#66707A] font-mono">7G değişim</span>
           {change7d !== null ? (
             <span className="flex items-center gap-1.5 text-xs font-mono tabular-nums" style={{ color: trendColor }}>
               {isPositive && <ArrowUp className="w-3 h-3" />}

@@ -221,7 +221,7 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
         >
           <Hexagon className="w-4 h-4 text-[#A3A3A3] shrink-0" />
           <div className="min-w-0 relative inline-flex items-start">
-            <div className="font-semibold tracking-wide text-[12px] uppercase leading-none">Mergen Intelligence</div>
+            <div className="app-brand-title font-semibold tracking-wide text-[11px] uppercase leading-none">MERGEN INTELLIGENCE</div>
             <span className="absolute -top-2 -right-8 text-[8px] font-mono uppercase tracking-[0.18em] text-[#FBBF24]">
               Beta
             </span>

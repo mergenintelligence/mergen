@@ -14,7 +14,19 @@ import { AiInsightCard } from './AiInsightCard';
 // UTILS
 // ─────────────────────────────────────────────────────────────
 
+function isLightTheme() {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.dataset.theme === 'light';
+}
+
 function scoreColor(score: number | null): string {
+  if (isLightTheme()) {
+    if (score === null) return '#8A8A8A';
+    if (score >= 75) return '#2F9E5B';
+    if (score >= 55) return '#C6921A';
+    if (score >= 35) return '#D67A2C';
+    return '#D65C5C';
+  }
   if (score === null) return '#4A4A4A';
   if (score >= 75) return '#4ADE80';
   if (score >= 55) return '#FBBF24';
@@ -23,14 +35,28 @@ function scoreColor(score: number | null): string {
 }
 
 function scoreBg(score: number | null): string {
+  if (isLightTheme()) {
+    if (score === null) return '#F4F3EE';
+    if (score >= 75) return '#E7F1EA';
+    if (score >= 55) return '#EEF1EC';
+    if (score >= 35) return '#F2ECEA';
+    return '#F4E5E4';
+  }
   if (score === null) return '#111111';
-  if (score >= 75) return '#0A1A0A';
-  if (score >= 55) return '#141008';
-  if (score >= 35) return '#160C06';
-  return '#180808';
+  if (score >= 75) return '#22382F';
+  if (score >= 55) return '#28312D';
+  if (score >= 35) return '#312B2C';
+  return '#4B2D2E';
 }
 
 function scoreBorder(score: number | null): string {
+  if (isLightTheme()) {
+    if (score === null) return '#DDD9CF';
+    if (score >= 75) return '#CFE2D4';
+    if (score >= 55) return '#DDDCCF';
+    if (score >= 35) return '#E2D5CF';
+    return '#E5CBC9';
+  }
   if (score === null) return '#1F1F1F';
   if (score >= 75) return '#1A3A1A';
   if (score >= 55) return '#3A3010';
@@ -535,7 +561,6 @@ function TopAssetsMarketPanel() {
         icon={<Globe className="w-4 h-4" />}
         title="Küresel Varlık Liderleri"
         accent="#60A5FA"
-        subtitle="Piyasa değeriyle öne çıkan küresel varlıkları iki sütunda, günlük yön ve ülke dağılımıyla hızlı okumak için."
         right={<span className="text-[11px] text-[#666666] font-mono">14 varlık</span>}
       />
 
@@ -760,7 +785,6 @@ function Mag7LeadershipHeatmap() {
         icon={<Zap className="w-4 h-4" />}
         title="MAG7 Liderlik Haritası"
         accent="#22C55E"
-        subtitle="Mega-cap teknoloji liderlerinde günlük güç dağılımını, liderliği ve gün içi yönü tek bakışta izlemek için."
         right={<span className="text-[11px] text-[#666666] font-mono">7 hisse</span>}
       />
 
@@ -1852,21 +1876,32 @@ export function DirectionCard({
   };
 
   const text = summary ? `${summary} ${addendum[regime]}` : fallbacks[regime];
+  const tone = {
+    border: scoreBorder(score),
+    color,
+    backgroundImage: `linear-gradient(135deg, ${color}16 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
+    boxShadow: `0 0 0 1px rgba(255,255,255,0.015) inset, 0 18px 40px ${color}0f`,
+  };
 
   return (
     <div
-      className={`relative rounded-sm border overflow-hidden h-full ${className}`}
-      style={{ borderColor: scoreBorder(score), backgroundColor: scoreBg(score) }}
+      className={`relative flex-1 overflow-hidden rounded-sm border bg-[#111111] px-5 py-4 ${className}`}
+      style={{
+        borderColor: tone.border,
+        backgroundImage: tone.backgroundImage,
+        boxShadow: tone.boxShadow,
+      }}
     >
       <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: color }} />
-      <div className="px-5 py-4 h-full flex flex-col">
-        <div className="text-[11px] font-mono uppercase tracking-[0.15em] mb-2" style={{ color }}>
-          Günün Piyasa Yönü · <span style={{ color }}>{scoreWord(score)}</span>
-        </div>
-        <p className="text-[14px] text-[#D4D4D4] leading-relaxed font-medium">
-          {text}
-        </p>
+      <div
+        className="mb-2 text-[11px] font-mono uppercase tracking-[0.15em]"
+        style={{ color }}
+      >
+        Günün Piyasa Yönü
       </div>
+      <p className="max-w-4xl text-[14px] text-[#D4D4D4] leading-relaxed font-medium">
+        {text}
+      </p>
     </div>
   );
 }
@@ -1975,51 +2010,46 @@ function CategoryHeatmap({
         title="Kategori Isı Haritası"
         accent="#8B5CF6"
         right={
-          <div className="flex items-center gap-3">
-          {[{ c: '#4ADE80', l: '≥75' }, { c: '#FBBF24', l: '55–74' }, { c: '#FB923C', l: '35–54' }, { c: '#F87171', l: '<35' }].map(item => (
-            <span key={item.l} className="flex items-center gap-1 text-[10px] font-mono text-[#666666]">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.c }} />
-              {item.l}
-            </span>
-          ))}
+          <div className="flex items-center gap-2 text-[10px] font-mono text-[#666666]">
+            <span>0</span>
+            {[{ c: '#7F3B3B' }, { c: '#6E4B42' }, { c: '#3A4340' }, { c: '#365043' }, { c: '#29543A' }].map((item, index) => (
+              <span key={index} className="h-2.5 w-3 rounded-[2px]" style={{ backgroundColor: item.c }} />
+            ))}
+            <span>100</span>
           </div>
         }
       />
-      <div className="grid grid-cols-6 gap-px bg-[#0A0A0A]">
+      <div className="p-3 bg-[#181C20]">
+      <div className="grid grid-cols-6 gap-1">
         {categories.map(cat => {
           const score = cat.score !== null ? Math.round(cat.score) : null;
-          const color = scoreColor(cat.score);
           const bg = scoreBg(cat.score);
           return (
             <button
               key={cat.id}
               type="button"
               onClick={() => onSelectCategory(cat.id)}
-              className="flex flex-col items-start p-3 text-left transition-all hover:brightness-125 relative"
-              style={{ backgroundColor: bg, minHeight: '84px' }}
+              className="group relative flex flex-col items-start rounded-sm border p-3 text-left transition-all hover:brightness-105"
+              style={{
+                backgroundColor: bg,
+                borderColor: 'rgba(255,255,255,0.025)',
+                minHeight: '78px',
+              }}
             >
-              <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ backgroundColor: color, opacity: 0.3 }}>
-                <div className="h-full" style={{ width: `${score ?? 0}%`, backgroundColor: color }} />
-              </div>
-              <div
-                className="text-[10px] font-medium leading-tight mb-2 w-full"
-                style={{ color: cat.score !== null ? color : '#3A3A3A' }}
-              >
+              <div className="text-[11px] leading-tight text-[#E7E7E7]">
                 {cat.name}
               </div>
-              <div className="flex items-end justify-between w-full mt-auto">
+              <div className="mt-auto flex w-full items-end justify-between gap-2">
                 <span
-                  className="text-[20px] font-bold font-mono tabular-nums leading-none"
-                  style={{ color: cat.score !== null ? color : '#2A2A2A' }}
+                  className="text-[17px] font-semibold font-mono tabular-nums leading-none text-[#F3F4F6]"
                 >
                   {score ?? '—'}
                 </span>
                 {cat.change7d !== null && (
                   <span
-                    className="text-[10px] font-mono mb-0.5"
-                    style={{ color: cat.change7d > 0 ? '#4ADE80' : cat.change7d < 0 ? '#F87171' : '#555555' }}
+                    className="text-[9px] font-mono text-[#6B7280] opacity-0 transition-opacity group-hover:opacity-100"
                   >
-                    {cat.change7d > 0 ? '+' : ''}{Math.round(cat.change7d)}
+                    7g {cat.change7d > 0 ? '+' : ''}{Math.round(cat.change7d)}
                   </span>
                 )}
               </div>
@@ -2031,13 +2061,14 @@ function CategoryHeatmap({
             key={id}
             type="button"
             onClick={() => onSelectCategory(id)}
-            className="flex flex-col items-start p-3 text-left bg-[#0A0A0A] hover:bg-[#0D0D0D] transition-colors"
-            style={{ minHeight: '84px' }}
+            className="flex flex-col items-start rounded-sm border border-[rgba(255,255,255,0.03)] p-3 text-left bg-[#181D22] hover:bg-[#1B2026] transition-colors"
+            style={{ minHeight: '78px' }}
           >
-            <div className="text-[10px] font-medium leading-tight text-[#2A2A2A]">{name}</div>
-            <div className="text-[20px] font-bold font-mono text-[#1F1F1F] mt-auto">—</div>
+            <div className="text-[11px] leading-tight text-[#5F6771]">{name}</div>
+            <div className="mt-auto text-[18px] font-semibold font-mono text-[#434A53]">—</div>
           </button>
         ))}
+      </div>
       </div>
     </div>
   );
@@ -2901,49 +2932,70 @@ export function HomePage({
         <StartHereCard categories={categories} alerts={alerts} onSelectCategory={onSelectCategory} />
 
         {/* Mergen Index Stats */}
-        <div className="rounded-sm border overflow-hidden relative" style={{ borderColor: scoreBorder(totalScore), backgroundColor: scoreBg(totalScore) }}>
-          <div className="absolute inset-x-0 top-0 h-[2px]" style={{ backgroundColor: color }} />
+        <div className="relative overflow-hidden rounded-sm border border-[#2A2E33] bg-[#1A1E22]">
+          <div className="absolute left-0 top-4 bottom-4 w-[2px] bg-[#F1B84A]" />
           <div className="p-5">
-            <div className="text-[11px] font-mono uppercase tracking-[0.15em] mb-3" style={{ color }}>
-              Mergen Endeksi
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#9AA0A6]">
+                Mergen Endeksi
+              </div>
+              <div className="rounded-[2px] border border-[#F1B84A] bg-[#211A0E] px-2 py-1 text-[10px] font-mono uppercase tracking-[0.14em] text-[#F1B84A]">
+                1G
+              </div>
             </div>
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[44px] font-bold font-mono tabular-nums leading-none" style={{ color }}>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-[44px] font-semibold font-mono tabular-nums leading-none text-[#F5F7FA]">
                 {totalScore ?? '—'}
               </span>
-              <span className="text-[14px] text-[#555555] font-mono">/100</span>
-              {totalScoreTrend === 'up' && <TrendingUp className="w-5 h-5 text-[#4ADE80] mb-1" />}
-              {totalScoreTrend === 'down' && <TrendingDown className="w-5 h-5 text-[#F87171] mb-1" />}
-              {totalScoreTrend === 'flat' && <Minus className="w-5 h-5 text-[#666666] mb-1" />}
+              <span className="text-[14px] text-[#666D75] font-mono">/100</span>
             </div>
-            <div className="h-[4px] bg-[#1A1A1A] rounded-full mb-4 mt-2">
-              <div className="h-full rounded-full" style={{ width: `${totalScore ?? 0}%`, backgroundColor: color, opacity: 0.7 }} />
+            <div className="mb-3 flex items-center justify-between gap-3 text-[10px] font-mono">
+              <div style={{ color: totalScoreChange7d !== null ? (totalScoreChange7d > 0 ? '#F87171' : totalScoreChange7d < 0 ? '#4ADE80' : '#888888') : '#666666' }}>
+                {totalScoreChange7d !== null ? `${totalScoreChange7d > 0 ? '+' : ''}${totalScoreChange7d.toFixed(1)}% Önceki kapanış` : '— Önceki kapanış'}
+              </div>
+              <div className="text-[#666D75]">14g MA</div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-[11px] mb-4">
+            <div className="mb-3">
+              <div className="relative h-[5px] overflow-hidden rounded-full bg-[#2A2F35]">
+                <div className="absolute inset-y-0 left-0 w-[25%] bg-[#D96B63]" />
+                <div className="absolute inset-y-0 left-[25%] w-[25%] bg-[#B58B4E]" />
+                <div className="absolute inset-y-0 left-[50%] w-[25%] bg-[#7A8A58]" />
+                <div className="absolute inset-y-0 left-[75%] w-[25%] bg-[#5A9A6D]" />
+                <div className="absolute top-1/2 z-10 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[#E8ECEF]" style={{ left: `${totalScore ?? 0}%` }} />
+              </div>
+              <div className="mt-2 flex items-center justify-between text-[9px] font-mono text-[#606771]">
+                <span>0</span>
+                <span>25</span>
+                <span>50</span>
+                <span>75</span>
+                <span>100</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-dashed border-[#2A2E33] pt-3 text-[11px]">
               <div>
-                <div className="text-[#666666] font-mono mb-0.5">7 Günlük Değişim</div>
-                <div className="font-mono font-bold text-[13px]" style={{ color: totalScoreChange7d !== null ? (totalScoreChange7d > 0 ? '#4ADE80' : totalScoreChange7d < 0 ? '#F87171' : '#888888') : '#555555' }}>
+                <div className="mb-0.5 font-mono text-[#666D75]">7 Günlük Değişim</div>
+                <div className="font-mono font-semibold text-[13px]" style={{ color: totalScoreChange7d !== null ? (totalScoreChange7d > 0 ? '#4ADE80' : totalScoreChange7d < 0 ? '#F87171' : '#888888') : '#555555' }}>
                   {totalScoreChange7d !== null ? `${totalScoreChange7d > 0 ? '+' : ''}${totalScoreChange7d.toFixed(1)}` : '—'}
                 </div>
               </div>
               <div>
-                <div className="text-[#666666] font-mono mb-0.5">Rejim</div>
-                <div className="font-mono font-bold text-[12px]" style={{ color: regimeFlow.color }}>
+                <div className="mb-0.5 font-mono text-[#666D75]">Rejim</div>
+                <div className="font-mono font-semibold text-[12px]" style={{ color: regimeFlow.color }}>
                   {regimeFlow.label}
                 </div>
               </div>
               <div>
-                <div className="text-[#666666] font-mono mb-0.5">Aktif Kategoriler</div>
-                <div className="font-mono font-bold text-[13px] text-[#AAAAAA]">{scoredCategories.length}</div>
+                <div className="mb-0.5 font-mono text-[#666D75]">Aktif Kategoriler</div>
+                <div className="font-mono font-semibold text-[13px] text-[#E5E7EB]">{scoredCategories.length}</div>
               </div>
               <div>
-                <div className="text-[#666666] font-mono mb-0.5">Kapsama Oranı</div>
-                <div className="font-mono font-bold text-[13px] text-[#AAAAAA]">
+                <div className="mb-0.5 font-mono text-[#666D75]">Kapsama Oranı</div>
+                <div className="font-mono font-semibold text-[13px] text-[#E5E7EB]">
                   %{totalTrackedMetrics > 0 ? Math.round((totalFetchedMetrics / totalTrackedMetrics) * 100) : 0}
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-px overflow-hidden rounded-sm border border-[#1A1A1A]">
+            <div className="mt-4 grid grid-cols-4 gap-px overflow-hidden rounded-sm border border-[#2A2E33] bg-[#2A2E33]">
               {[
                 { label: 'Risk-On', min: 75, max: 100, c: '#4ADE80' },
                 { label: 'Nötr', min: 55, max: 74, c: '#FBBF24' },
@@ -2955,7 +3007,7 @@ export function HomePage({
                   <div
                     key={band.label}
                     className="py-2 text-center text-[10px] font-mono font-semibold transition-all"
-                    style={{ color: active ? band.c : '#333333', backgroundColor: active ? band.c + '18' : '#0D0D0D' }}
+                    style={{ color: active ? '#F5F7FA' : '#4C535D', backgroundColor: active ? `${band.c}22` : '#161A1E' }}
                   >
                     {band.label}
                   </div>

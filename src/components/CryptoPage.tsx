@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUp, ArrowDown, Minus, Layers3, Star } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import type { DashboardData } from '../hooks/useDashboardData';
 import { AiInsightCard } from './AiInsightCard';
 

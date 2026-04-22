@@ -20,6 +20,7 @@ import { NewsPage } from './components/NewsPage';
 import { DirectionCard, HomePage } from './components/HomePage';
 import { WeeklyReportsPage } from './components/WeeklyReportsPage';
 import { AiInsightCard } from './components/AiInsightCard';
+import { PortfolioRadarPage } from './components/PortfolioRadarPage';
 
 const CRYPTO_CATEGORY_ID = '30000000-0000-0000-0000-000000000011';
 const PREDICTION_CATEGORY_ID = '30000000-0000-0000-0000-000000000012';
@@ -28,6 +29,7 @@ const DIVERGENCES_SECTION_ID = 'divergences';
 const SETTINGS_SECTION_ID = 'settings';
 const COOLDOWN_SECTION_ID = 'cooldown';
 const WEEKLY_REPORTS_SECTION_ID = 'weekly-reports';
+const PORTFOLIO_RADAR_SECTION_ID = 'portfolio-radar';
 const APP_SETTINGS_KEY = 'mergen-ui-settings';
 
 const PLACEHOLDERS: Record<string, string> = {
@@ -50,7 +52,7 @@ const PLACEHOLDERS: Record<string, string> = {
   '30000000-0000-0000-0000-000000000017': 'Küresel Ticaret ve Tedarik Zinciri',
 };
 const NEWS_SECTION_ID = 'news';
-const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID, WEEKLY_REPORTS_SECTION_ID] as const;
+const UTILITY_SECTION_IDS = [NEWS_SECTION_ID, ALERTS_SECTION_ID, DIVERGENCES_SECTION_ID, SETTINGS_SECTION_ID, COOLDOWN_SECTION_ID, WEEKLY_REPORTS_SECTION_ID, PORTFOLIO_RADAR_SECTION_ID] as const;
 
 type AppSettings = {
   theme: 'light' | 'slate';
@@ -866,6 +868,8 @@ export default function App() {
             ? 'Ayarlar'
             : selectedCategoryId === COOLDOWN_SECTION_ID
               ? 'Cooldown'
+              : selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID
+                ? 'Portföy Radar'
       : selectedCategory?.name || PLACEHOLDERS[selectedCategoryId] || 'Kategori Endeksi';
   const topPanelScore = selectedCategoryId === 'home'
     ? data?.totalScore ?? null
@@ -874,6 +878,7 @@ export default function App() {
       || selectedCategoryId === DIVERGENCES_SECTION_ID
       || selectedCategoryId === SETTINGS_SECTION_ID
       || selectedCategoryId === COOLDOWN_SECTION_ID
+      || selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID
       ? null
       : selectedCategory?.score ?? null;
   const topPanelTrend = selectedCategoryId === 'home'
@@ -883,6 +888,7 @@ export default function App() {
       || selectedCategoryId === DIVERGENCES_SECTION_ID
       || selectedCategoryId === SETTINGS_SECTION_ID
       || selectedCategoryId === COOLDOWN_SECTION_ID
+      || selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID
       ? 'flat'
       : selectedCategory?.trend ?? 'flat';
   const topPanelChange7d = selectedCategoryId === 'home'
@@ -892,6 +898,7 @@ export default function App() {
       || selectedCategoryId === DIVERGENCES_SECTION_ID
       || selectedCategoryId === SETTINGS_SECTION_ID
       || selectedCategoryId === COOLDOWN_SECTION_ID
+      || selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID
       ? null
       : selectedCategory?.change7d ?? null;
   const scoredCategories = (data?.categories ?? []).filter(
@@ -915,6 +922,8 @@ export default function App() {
           ? 'Panel Ayarları'
           : selectedCategoryId === COOLDOWN_SECTION_ID
             ? 'Operasyon Merkezi'
+          : selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID
+            ? 'Portföy Radar'
       : `${selectedCategory?.name || topPanelLabel} Skor Değerlendirmesi`;
   const topInfoText = selectedCategoryId === 'home'
     ? `${
@@ -936,6 +945,8 @@ export default function App() {
             ? 'Ayarlar bölümü görünüm, hareket ve rehber deneyimini kişiselleştirmek için ilk yapı taşlarını içerir.'
             : selectedCategoryId === COOLDOWN_SECTION_ID
             ? 'Bu gizli ekran, sistem çalıştırma ve AI yorum yenileme işlemlerini tek yerden manuel tetiklemek için hazırlandı.'
+            : selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID
+            ? 'Ünlü yatırımcı, insider, kongre ve medya/model portföylerini kaynak güveniyle birlikte izlemek için hazırlandı.'
       : getScoreNarrative(topPanelScore, topPanelLabel);
   const isNewsSection = selectedCategoryId === NEWS_SECTION_ID;
   const topInfoTone = isNewsSection
@@ -1351,6 +1362,8 @@ export default function App() {
           />
         ) : selectedCategoryId === WEEKLY_REPORTS_SECTION_ID ? (
           <WeeklyReportsPage />
+        ) : selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID ? (
+          <PortfolioRadarPage />
         ) : selectedCategoryId === NEWS_SECTION_ID ? (
           <NewsPage
             news={data?.news ?? { critical: [], daily: [], other: [] }}

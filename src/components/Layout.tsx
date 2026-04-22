@@ -21,6 +21,7 @@ const ALERTS_SECTION_ID = 'alerts';
 const DIVERGENCES_SECTION_ID = 'divergences';
 const SETTINGS_SECTION_ID = 'settings';
 const COOLDOWN_SECTION_ID = 'cooldown';
+const PORTFOLIO_RADAR_SECTION_ID = 'portfolio-radar';
 
 const getCategoryIcon = (name: string) => {
   const lowerName = name.toLowerCase();
@@ -308,6 +309,12 @@ export function Layout({ children, lastUpdate, categories = [], alertCount = 0, 
             <div className="h-px bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.08)_20%,rgba(255,255,255,0.08)_80%,transparent_100%)]" />
           </div>
           <nav className="space-y-0.5 mb-4">
+            <NavItem
+              icon={<BriefcaseBusiness />}
+              label="Portföy Radar"
+              active={selectedCategoryId === PORTFOLIO_RADAR_SECTION_ID}
+              onClick={() => onSelectCategory && onSelectCategory(PORTFOLIO_RADAR_SECTION_ID)}
+            />
             <NavItem
               icon={<BookOpen />}
               label="Haftalık Rapor"

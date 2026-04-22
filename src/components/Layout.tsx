@@ -90,6 +90,11 @@ const getCategoryIconTone = (label: string, active = false) => {
 };
 
 const PLACEHOLDERS: Record<string, string> = {
+  '10000000-0000-0000-0000-000000000002': 'Piyasa Likiditesi',
+  '10000000-0000-0000-0000-000000000003': 'Reel Ekonomi ve Büyüme',
+  '10000000-0000-0000-0000-000000000004': 'Enflasyon Baskıları',
+  '10000000-0000-0000-0000-000000000005': 'Küresel Riskler',
+  '10000000-0000-0000-0000-000000000001': 'Kredi ve Finansal Stres',
   '30000000-0000-0000-0000-000000000001': 'Siyasi ve Sosyal İstikrar',
   '30000000-0000-0000-0000-000000000002': 'Teknoloji ve Yapısal Dönüşüm',
   '30000000-0000-0000-0000-000000000003': 'Fed İçi Güç Dengesi',

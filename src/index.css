@@ -74,6 +74,37 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.premium-accent-panel {
+  position: relative;
+}
+
+.premium-accent-panel::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 8;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, #f1b84a 0%, #72d39a 42%, #7fb4ff 78%, rgba(127, 180, 255, 0.25) 100%);
+}
+
+.home-gradient-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, #f1b84a 0%, rgba(241, 184, 74, 0.32) 27%, rgba(114, 211, 154, 0.72) 58%, rgba(127, 180, 255, 0.85) 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 html[data-theme='graphite'] body {
   background-color: #101214;
   color: #e6e6e6;

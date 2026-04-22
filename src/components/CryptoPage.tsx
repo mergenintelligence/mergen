@@ -300,7 +300,7 @@ function CryptoSectionHeader({
 
   return (
     <div
-      className={`relative mb-4 overflow-hidden rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
+      className={`premium-accent-panel relative mb-4 overflow-hidden rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
       style={headerStyle}
     >
       <div
@@ -356,7 +356,7 @@ function CryptoMetricsHeader({
 }) {
   return (
     <div
-      className="relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
+      className="premium-accent-panel relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
       style={{
         borderColor: '#2A2A2A',
         background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',

@@ -196,7 +196,7 @@ function PredictionMetricsHeader({
 }) {
   return (
     <div
-      className="relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
+      className="premium-accent-panel relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
       style={{
         borderColor: '#2A2A2A',
         background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
@@ -530,7 +530,7 @@ export function PredictionMarketsPage({
       {spotlightMetrics.length > 0 && (
         <div>
           <div
-            className="relative mb-4 rounded-sm border px-4 py-3 border-[#3B3116] bg-[#141108]"
+            className="premium-accent-panel relative mb-4 rounded-sm border px-4 py-3 border-[#3B3116] bg-[#141108]"
             style={{
               backgroundImage: 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)',
               boxShadow: '0 0 0 1px rgba(251,191,36,0.04) inset',
@@ -606,7 +606,7 @@ export function PredictionMarketsPage({
         return (
           <div key={section.key}>
             <div
-              className={`relative mb-4 rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
+              className={`premium-accent-panel relative mb-4 rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
               style={{
                 backgroundImage: `linear-gradient(135deg, ${section.accent}14 0%, transparent 34%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%)`,
                 boxShadow: tone.glow,

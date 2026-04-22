@@ -20,7 +20,7 @@ export function AiInsightCard({
   emptyText,
 }: AiInsightCardProps) {
   return (
-    <div className="relative rounded-sm border border-[#1A3A1A] bg-[#0A1A0A] overflow-hidden">
+    <div className="premium-accent-panel relative rounded-sm border border-[#1A3A1A] bg-[#0A1A0A] overflow-hidden">
       <div className="absolute inset-x-0 top-0 h-[2px] bg-[#4ADE80]" />
       <div className="p-5">
         <div className="flex items-center gap-2 mb-3">

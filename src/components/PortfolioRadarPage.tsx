@@ -435,7 +435,7 @@ export function PortfolioRadarPage() {
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-sm border border-[#1F1F1F] bg-[#111111]">
+      <section className="premium-accent-panel relative overflow-hidden rounded-sm border border-[#1F1F1F] bg-[#111111]">
         <div className="absolute inset-x-0 top-0 h-[2px] bg-[linear-gradient(90deg,#F1B84A_0%,#72D39A_45%,#7FB4FF_100%)]" />
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#F1B84A]/[0.08] blur-3xl" />
         <div className="absolute -left-24 bottom-0 h-64 w-64 rounded-full bg-[#72D39A]/[0.06] blur-3xl" />
@@ -468,7 +468,7 @@ export function PortfolioRadarPage() {
         </div>
       </section>
 
-      <section className="rounded-sm border border-[#1F1F1F] bg-[#111111]">
+      <section className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111]">
         <div className="flex flex-col gap-4 border-b border-[#1A1A1A] p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div className="space-y-2">

@@ -506,7 +506,7 @@ function NarrativeHeatmap({
   onSelect: (name: string | null) => void;
 }) {
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
+    <div className="premium-accent-panel relative overflow-hidden rounded-sm border border-[#1F1F1F] bg-[#0A0A0A] flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[#1A1A1A] shrink-0">
         <Activity className="w-3 h-3 text-[#444444] shrink-0" />
@@ -604,7 +604,7 @@ function CorrelationAlertsBanner({ brokenIds }: { brokenIds: string[] }) {
   if (broken.length === 0) return null;
 
   return (
-    <div className="rounded-sm border border-[#2A1A0A] bg-[#0D0908] p-3">
+    <div className="premium-accent-panel relative overflow-hidden rounded-sm border border-[#2A1A0A] bg-[#0D0908] p-3">
       <div className="flex items-center gap-2 mb-2">
         <Zap className="w-3.5 h-3.5 text-[#FB923C]" />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-[#FB923C]">

@@ -98,7 +98,7 @@ function ReportDetail({ report, onBack }: { report: WeeklyReport; onBack: () => 
       )}
 
       {/* Header */}
-      <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-5">
+      <div className="premium-accent-panel relative overflow-hidden rounded-sm border border-[#1F1F1F] bg-[#111111] p-5">
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="w-3.5 h-3.5 text-[#555555]" />
           <span className="text-[11px] text-[#555555] font-mono">{dateTime}</span>
@@ -109,7 +109,7 @@ function ReportDetail({ report, onBack }: { report: WeeklyReport; onBack: () => 
       </div>
 
       {/* Body */}
-      <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] p-5">
+      <div className="premium-accent-panel relative overflow-hidden rounded-sm border border-[#1F1F1F] bg-[#111111] p-5">
         <div className="text-[13px] text-[#AAAAAA] leading-relaxed">
           {renderContent(report.content)}
         </div>
@@ -123,7 +123,7 @@ function ReportCard({ report, onOpen }: { report: WeeklyReport; onOpen: () => vo
   const dateTime = formatDateTime(report.published_at ?? report.created_at);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       {/* Cover image */}
       {report.image_url ? (
         <div
@@ -202,7 +202,7 @@ export function WeeklyReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div
-        className="relative rounded-sm border border-[#2A2A2A] overflow-hidden p-6"
+        className="premium-accent-panel relative rounded-sm border border-[#2A2A2A] overflow-hidden p-6"
         style={{
           background: 'linear-gradient(135deg, #0f1a12 0%, #111111 40%, #0d1219 100%)',
           boxShadow: '0 0 0 1px rgba(255,255,255,0.03) inset, 0 18px 40px rgba(74,222,128,0.04)',

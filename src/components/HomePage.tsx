@@ -556,7 +556,7 @@ function TopAssetsMarketPanel() {
   const rightColumn = items.slice(7, 14);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<Globe className="w-4 h-4" />}
         title="Küresel Varlık Liderleri"
@@ -780,7 +780,7 @@ function Mag7LeadershipHeatmap() {
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<Zap className="w-4 h-4" />}
         title="MAG7 Liderlik Haritası"
@@ -1571,7 +1571,7 @@ function WorldMap({
   };
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       {/* Header */}
       <PremiumPanelHeader
         icon={<Globe className="w-4 h-4" />}
@@ -1885,7 +1885,7 @@ export function DirectionCard({
 
   return (
     <div
-      className={`relative flex-1 overflow-hidden rounded-sm border bg-[#111111] px-5 py-4 ${className}`}
+      className={`premium-accent-panel relative flex-1 overflow-hidden rounded-sm border bg-[#111111] px-5 py-4 ${className}`}
       style={{
         borderColor: tone.border,
         backgroundImage: tone.backgroundImage,
@@ -1937,7 +1937,7 @@ function StartHereCard({
   }, [categories, alerts]);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<Eye className="w-4 h-4" />}
         title="Bugün Nereden Başlamalıyım?"
@@ -2004,7 +2004,7 @@ function CategoryHeatmap({
   onSelectCategory: (id: string) => void;
 }) {
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<Activity className="w-4 h-4" />}
         title="Kategori Isı Haritası"
@@ -2087,7 +2087,7 @@ function ContributorsPanel({ categories }: { categories: DashboardData['categori
     : null;
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
       <PremiumPanelHeader
         icon={<Zap className="w-4 h-4" />}
         title="Yukarı / Aşağı Çekenler"
@@ -2190,7 +2190,7 @@ function RegimeRadar({ categories }: { categories: DashboardData['categories'] }
   }, [categories]);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<MapIcon className="w-4 h-4" />}
         title="Rejim Radar"
@@ -2254,7 +2254,7 @@ function ReadingFlow({
   }, [flow.keywords, categories]);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<BookOpen className="w-4 h-4" />}
         title="İnceleme Akışı"
@@ -2326,7 +2326,7 @@ function RegionalRiskMap({ categories }: { categories: DashboardData['categories
   }, [categories]);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden flex flex-col">
       <PremiumPanelHeader
         icon={<MapIcon className="w-4 h-4" />}
         title="Bölgesel Risk Görünümü"
@@ -2447,7 +2447,7 @@ function CorrelationSignalPanel({
   }, [leftCategory, rightCategory]);
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<Link2 className="w-4 h-4" />}
         title="Korelasyon Sinyalleri"
@@ -2739,7 +2739,7 @@ function AlertTimelinePanel({
   );
 
   return (
-    <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+    <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
       <PremiumPanelHeader
         icon={<BellRing className="w-4 h-4" />}
         title="Alert Timeline"
@@ -2886,7 +2886,7 @@ export function HomePage({
 
       {/* ─── Watchlist ───────────────────────────────────── */}
       {watchlist.length > 0 && (
-        <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+        <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
           <PremiumPanelHeader
             icon={<Star className="w-4 h-4" />}
             title="İzleme Listesi"
@@ -2932,7 +2932,7 @@ export function HomePage({
         <StartHereCard categories={categories} alerts={alerts} onSelectCategory={onSelectCategory} />
 
         {/* Mergen Index Stats */}
-        <div className="relative overflow-hidden rounded-sm border border-[#2A2E33] bg-[#1A1E22]">
+        <div className="premium-accent-panel relative overflow-hidden rounded-sm border border-[#2A2E33] bg-[#1A1E22]">
           <div className="absolute left-0 top-4 bottom-4 w-[2px] bg-[#F1B84A]" />
           <div className="p-5">
             <div className="mb-4 flex items-start justify-between gap-3">
@@ -3053,7 +3053,7 @@ export function HomePage({
       />
 
       {/* ─── Son Sapmalar ────────────────────────────────── */}
-      <div className="rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
+      <div className="premium-accent-panel rounded-sm border border-[#1F1F1F] bg-[#111111] overflow-hidden">
         <PremiumPanelHeader
           icon={<Activity className="w-4 h-4" />}
           title="Son Sapmalar"

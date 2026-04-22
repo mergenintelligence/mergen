@@ -1313,7 +1313,7 @@ export default function App() {
           {selectedCategoryId !== 'home' && selectedCategoryId !== WEEKLY_REPORTS_SECTION_ID && (
             <div className="flex-1 min-w-0 flex">
               <div
-                className={`relative flex-1 overflow-hidden rounded-sm border ${topInfoTone.border} px-5 py-4 bg-[#111111]`}
+                className={`premium-accent-panel relative flex-1 overflow-hidden rounded-sm border ${topInfoTone.border} px-5 py-4 bg-[#111111]`}
                 style={{
                   backgroundImage: topInfoTone.backgroundImage,
                   boxShadow: topInfoTone.boxShadow,
@@ -1710,7 +1710,7 @@ export default function App() {
                 </div>
 
                 <div
-                  className="relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
+                  className="premium-accent-panel relative mb-4 rounded-sm border px-4 py-3 overflow-hidden"
                   style={{
                     borderColor: '#2A2A2A',
                     background: 'linear-gradient(135deg, rgba(245,158,11,0.16) 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)',
@@ -1776,7 +1776,7 @@ export default function App() {
                       return (
                       <div key={group.title}>
                         <div
-                          className={`relative mb-4 rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
+                          className={`premium-accent-panel relative mb-4 rounded-sm border px-4 py-3 ${tone.border} ${tone.bg}`}
                           style={{
                             backgroundImage: `linear-gradient(135deg, ${tone.accent}26 0%, rgba(24,24,24,0.52) 24%, rgba(15,15,18,0.96) 58%, rgba(15,15,18,1) 100%), linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)`,
                             boxShadow: `${tone.glow}, 0 16px 34px ${tone.accent}12`,
@@ -2182,9 +2182,8 @@ function TopScoreHero({
 
   return (
     <div
-      className="relative shrink-0 overflow-hidden rounded-sm border border-[#2A2E33] px-5 py-4 min-w-[250px] bg-[#1A1E22]"
+      className="premium-accent-panel home-gradient-frame relative shrink-0 overflow-hidden rounded-sm border border-[#2A2E33] px-5 py-4 min-w-[250px] bg-[#1A1E22]"
     >
-      <div className="absolute left-0 top-4 bottom-4 w-[2px]" style={{ backgroundColor: tone.color }} />
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[10px] text-[#8E959D] uppercase tracking-[0.16em] mb-2 font-mono">{label}</div>

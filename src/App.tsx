@@ -1859,6 +1859,47 @@ export default function App() {
                   </div>
                 )}
 
+                {selectedCategoryId === FED_POWER_CATEGORY_ID && data?.fedProfiles.length > 0 && (
+                  <div className="mt-8">
+                    <div className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3] mb-4">
+                      Fed Güç Haritası
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {data.fedProfiles.map((profile) => (
+                        <div key={profile.name} className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                              <div className="text-sm font-semibold text-[#E5E5E5]">{profile.name}</div>
+                              <div className="text-[11px] uppercase tracking-wider text-[#A3A3A3] mt-1">{profile.role}</div>
+                            </div>
+                            <div className="text-[10px] text-[#A3A3A3] border border-[#1F1F1F] px-2 py-1 rounded-sm">
+                              {profile.origin}
+                            </div>
+                          </div>
+                          <div className="space-y-3 text-sm text-[#D4D4D4]">
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Önceki Kurumlar</div>
+                              <div>{profile.priorInstitutions.join(', ')}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Siyasi Eğilim</div>
+                              <div>{profile.politicalTilt}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Faiz Bakışı</div>
+                              <div>{profile.rateView}</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Bilinen Bağlantılar</div>
+                              <div>{profile.knownLinks.join(', ')}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {data?.pilotMetrics && data.pilotMetrics.length > 0 && (
                   <div className="mt-10">
                     <button
@@ -1922,47 +1963,6 @@ export default function App() {
                         })}
                       </div>
                     )}
-                  </div>
-                )}
-
-                {selectedCategoryId === FED_POWER_CATEGORY_ID && data?.fedProfiles.length > 0 && (
-                  <div className="mt-8">
-                    <div className="text-sm font-medium uppercase tracking-wider text-[#A3A3A3] mb-4">
-                      Fed Güç Haritası
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {data.fedProfiles.map((profile) => (
-                        <div key={profile.name} className="bg-[#111111] border border-[#1F1F1F] rounded-sm p-4">
-                          <div className="flex items-start justify-between gap-3 mb-3">
-                            <div>
-                              <div className="text-sm font-semibold text-[#E5E5E5]">{profile.name}</div>
-                              <div className="text-[11px] uppercase tracking-wider text-[#A3A3A3] mt-1">{profile.role}</div>
-                            </div>
-                            <div className="text-[10px] text-[#A3A3A3] border border-[#1F1F1F] px-2 py-1 rounded-sm">
-                              {profile.origin}
-                            </div>
-                          </div>
-                          <div className="space-y-3 text-sm text-[#D4D4D4]">
-                            <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Önceki Kurumlar</div>
-                              <div>{profile.priorInstitutions.join(', ')}</div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Siyasi Eğilim</div>
-                              <div>{profile.politicalTilt}</div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Faiz Bakışı</div>
-                              <div>{profile.rateView}</div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] uppercase tracking-wider text-[#666666] mb-1">Bilinen Bağlantılar</div>
-                              <div>{profile.knownLinks.join(', ')}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
 

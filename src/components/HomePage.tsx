@@ -19,6 +19,14 @@ function isLightTheme() {
   return document.documentElement.dataset.theme === 'light';
 }
 
+function normalizeAlertText(text: string): string {
+  return text
+    .replaceAll('Esik asildi', 'Eşik aşıldı')
+    .replaceAll('esik altinda', 'eşik altında')
+    .replaceAll('baskili bolgede', 'baskılı bölgede')
+    .replaceAll('gunde', 'günde');
+}
+
 function scoreColor(score: number | null): string {
   if (isLightTheme()) {
     if (score === null) return '#8A8A8A';
@@ -1933,7 +1941,7 @@ function StartHereCard({
         return { ...c, priority, hasAlert, change };
       })
       .sort((a, b) => a.priority - b.priority)
-      .slice(0, 3);
+      .slice(0, 5);
   }, [categories, alerts]);
 
   return (
@@ -2200,7 +2208,7 @@ function RegimeRadar({ categories }: { categories: DashboardData['categories'] }
       <div className="p-4">
         <ResponsiveContainer width="100%" height={260}>
           <RadarChart data={radarData} margin={{ top: 16, right: 40, bottom: 16, left: 40 }}>
-            <PolarGrid stroke="#1F1F1F" />
+            <PolarGrid stroke="#343A43" strokeOpacity={0.9} />
             <PolarAngleAxis
               dataKey="axis"
               tick={{ fill: '#999999', fontSize: 11, fontFamily: 'monospace' }}
@@ -2700,15 +2708,19 @@ function AlertTimelinePanel({
       });
     }
 
-    const baseAlerts = alerts.map((alert) => ({
+    const baseAlerts = alerts.map((alert) => {
+      const normalizedMessage = normalizeAlertText(alert.message);
+
+      return {
       id: alert.id,
       timestamp: alert.created_at,
       priority: alert.type === 'threshold' ? 'high' : alert.type === 'momentum' ? 'medium' : 'medium',
-      title: alert.message.split(':')[0] || 'Sistem uyarısı',
-      category: alert.message.split(':')[0] || 'Sistem',
-      summary: alert.message,
+      title: normalizedMessage.split(':')[0] || 'Sistem uyarısı',
+      category: normalizedMessage.split(':')[0] || 'Sistem',
+      summary: normalizedMessage,
       kind: alert.type === 'threshold' ? 'threshold' : alert.type === 'momentum' ? 'jump' : 'correlation',
-    })) as TimelineEvent[];
+      };
+    }) as TimelineEvent[];
 
     return [...baseAlerts, ...derived].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [alerts, categories, totalScore]);

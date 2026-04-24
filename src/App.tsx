@@ -742,6 +742,13 @@ function getMetricMeaning(metric: DashboardData['pilotMetrics'][number]) {
 
 function normalizeVisibleText(text: string) {
   return text
+    .replace(/\bEsik asildi\b/gi, 'Eşik aşıldı')
+    .replace(/\besik\b/gi, 'eşik')
+    .replace(/\basildi\b/gi, 'aşıldı')
+    .replace(/\baltinda\b/gi, 'altında')
+    .replace(/\bbaskili\b/gi, 'baskılı')
+    .replace(/\bbolgede\b/gi, 'bölgede')
+    .replace(/\bgunde\b/gi, 'günde')
     .replace(/\bgenis\b/gi, 'geniş')
     .replace(/\bgenisligini\b/gi, 'genişliğini')
     .replace(/\byogunlasma\b/gi, 'yoğunlaşma')

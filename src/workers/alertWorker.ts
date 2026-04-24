@@ -22,7 +22,7 @@ function findSevenDayReference(scores: ScoreRow[]): number | null {
 
 function buildDeltaMessage(label: string, delta: number): string {
   const direction = delta > 0 ? 'yukseldi' : 'geriledi';
-  return `${label} son 7 gunde ${Math.abs(delta).toFixed(1)} puan ${direction}.`;
+  return `${label} son 7 günde ${Math.abs(delta).toFixed(1)} puan ${direction}.`;
 }
 
 function getMetricDirection(latest: number | null, previous: number | null) {
@@ -60,7 +60,7 @@ export async function runAlertEngine() {
       if (absDelta > 10) {
         newAlerts.push({
           type: 'threshold',
-          message: `Esik asildi: ${buildDeltaMessage('Mergen Index', delta)}`,
+          message: `Eşik aşıldı: ${buildDeltaMessage('Mergen Index', delta)}`,
         });
       } else if (absDelta > 5) {
         newAlerts.push({
@@ -96,19 +96,19 @@ export async function runAlertEngine() {
       if (score < 25) {
         newAlerts.push({
           type: 'threshold',
-          message: `Esik asildi: ${category.name} kategori skoru kritik esik altinda (${score}/100).`,
+          message: `Eşik aşıldı: ${category.name} kategori skoru kritik eşik altında (${score}/100).`,
         });
       } else if (score < 40) {
         newAlerts.push({
           type: 'threshold',
-          message: `Esik asildi: ${category.name} kategori skoru baskili bolgede (${score}/100).`,
+          message: `Eşik aşıldı: ${category.name} kategori skoru baskılı bölgede (${score}/100).`,
         });
       }
 
       if (delta !== null && delta <= -8) {
         newAlerts.push({
           type: 'momentum',
-          message: `Momentum bozuldu: ${category.name} son 7 gunde ${Math.abs(delta).toFixed(1)} puan geriledi.`,
+          message: `Momentum bozuldu: ${category.name} son 7 günde ${Math.abs(delta).toFixed(1)} puan geriledi.`,
         });
       }
     }
